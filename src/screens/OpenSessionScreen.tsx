@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import QRCode from 'react-native-qrcode-svg';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useAuth } from '../auth/AuthContext';
 import { isAdvertising, startAdvertisingFor, stopAdvertising } from '../ble/advertiser';
 import { serverNow } from '../data/serverClock';
@@ -371,7 +372,8 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
         <EmptyState icon="users" title="Không có kết quả" subtitle="Thử tên hoặc mã sinh viên khác." />
       ) : (
         shown.map((item) => (
-          <Card key={item.uid} style={styles.personCard}>
+          <Animated.View key={item.uid} entering={FadeInDown.duration(260)} layout={LinearTransition}>
+          <Card style={styles.personCard}>
             <View style={styles.person}>
               <Avatar name={item.displayName} size={40} />
               <View style={styles.personInfo}>
@@ -384,6 +386,7 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
               <Badge label={methodLabel[item.method]} tone={methodTone[item.method]} />
             </View>
           </Card>
+          </Animated.View>
         ))
       )}
     </Screen>

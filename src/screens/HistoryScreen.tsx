@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
 import { subscribeMyHistory } from '../data/history';
@@ -54,7 +55,8 @@ export default function HistoryScreen() {
               subtitle="Các buổi bạn điểm danh sẽ hiện ở đây."
             />
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(280)}>
             <Card>
               <View style={styles.row}>
                 <Text style={styles.title} numberOfLines={1}>
@@ -65,6 +67,7 @@ export default function HistoryScreen() {
               <Text style={styles.subtitle}>{item.sessionTitle}</Text>
               <Text style={styles.meta}>{new Date(item.checkedInAt).toLocaleString('vi-VN')}</Text>
             </Card>
+            </Animated.View>
           )}
         />
       )}

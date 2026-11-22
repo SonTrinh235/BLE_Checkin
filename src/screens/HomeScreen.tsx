@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
@@ -54,7 +55,8 @@ export default function HomeScreen({ navigation }: Props) {
               subtitle="Tạo CLB mới hoặc nhập mã tham gia từ chủ nhiệm."
             />
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(280)}>
             <ClubCard
               club={item}
               onPress={() =>
@@ -67,6 +69,7 @@ export default function HomeScreen({ navigation }: Props) {
               onCheckIn={() => navigation.navigate('CheckIn', { clubId: item.clubId, clubName: item.name })}
               onManage={() => navigation.navigate('OpenSession', { clubId: item.clubId, clubName: item.name })}
             />
+            </Animated.View>
           )}
         />
       )}

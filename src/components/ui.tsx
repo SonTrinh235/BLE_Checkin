@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,14 +10,38 @@ import {
   Text,
   TextInput,
   TextInputProps,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
 import { Edge, SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import AnimatedCheck from './AnimatedCheck';
 import Icon, { IconName } from './Icon';
 import { colors, radius, spacing, Tone, toneColors, typography } from '../theme';
+import { haptics } from '../ui/haptics';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Springy press feedback that runs on the UI thread.
+function usePressScale(to: number) {
+  const scale = useSharedValue(1);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return {
+    style,
+    onPressIn: () => {
+      scale.value = withTiming(to, { duration: 90 });
+    },
+    onPressOut: () => {
+      scale.value = withTiming(1, { duration: 150 });
+    },
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /* Screen + Header                                                     */
@@ -154,16 +178,23 @@ export function Button({
     ghost: { bg: 'transparent', fg: colors.primary },
   }[variant];
 
+  const press = usePressScale(0.97);
+
   return (
-    <TouchableOpacity
-      onPress={onPress}
+    <AnimatedPressable
+      onPress={() => {
+        if (variant === 'primary' || variant === 'danger') haptics.light();
+        onPress();
+      }}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       disabled={inactive}
-      activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive, busy: loading }}
       style={[
         styles.button,
         { backgroundColor: inactive && variant !== 'ghost' ? colors.disabled : palette.bg },
+        press.style,
       ]}
     >
       {loading ? (
@@ -176,7 +207,7 @@ export function Button({
           </Text>
         </>
       )}
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 
@@ -218,16 +249,18 @@ export function Card({
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const press = usePressScale(0.985);
   if (onPress) {
     return (
-      <TouchableOpacity
+      <AnimatedPressable
         onPress={onPress}
-        activeOpacity={0.7}
+        onPressIn={press.onPressIn}
+        onPressOut={press.onPressOut}
         accessibilityRole="button"
-        style={[styles.card, style]}
+        style={[styles.card, style, press.style]}
       >
         {children}
-      </TouchableOpacity>
+      </AnimatedPressable>
     );
   }
   return <View style={[styles.card, style]}>{children}</View>;
@@ -258,7 +291,8 @@ export function StatusCard({
 }) {
   const t = toneColors[tone];
   return (
-    <View
+    <Animated.View
+      entering={FadeIn.duration(220)}
       style={[styles.statusCard, { backgroundColor: t.bg }]}
       accessibilityRole="summary"
       accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
@@ -274,7 +308,7 @@ export function StatusCard({
         </Text>
         {subtitle ? <Text style={styles.statusSubtitle}>{subtitle}</Text> : null}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -297,8 +331,20 @@ export function HeroState({
   const t = toneColors[tone];
   // Success + check gets the pen-stroke animation instead of the static icon.
   const drawnCheck = !busy && tone === 'success' && icon === 'check';
+
+  // Haptics: a success tap lands as the tick finishes drawing (~1s); problems
+  // buzz right away.
+  useEffect(() => {
+    if (busy) return;
+    if (drawnCheck) {
+      const id = setTimeout(haptics.success, 1030);
+      return () => clearTimeout(id);
+    }
+    if (tone === 'error' || tone === 'warning') haptics.warning();
+  }, [busy, drawnCheck, tone]);
+
   return (
-    <View style={styles.hero}>
+    <Animated.View entering={FadeInDown.duration(320)} style={styles.hero}>
       {drawnCheck ? (
         <AnimatedCheck />
       ) : (
@@ -313,7 +359,7 @@ export function HeroState({
       <Text style={styles.heroTitle}>{title}</Text>
       {subtitle ? <Text style={styles.heroSubtitle}>{subtitle}</Text> : null}
       {children}
-    </View>
+    </Animated.View>
   );
 }
 
