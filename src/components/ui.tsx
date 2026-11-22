@@ -15,6 +15,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Edge, SafeAreaView } from 'react-native-safe-area-context';
+import AnimatedCheck from './AnimatedCheck';
 import Icon, { IconName } from './Icon';
 import { colors, radius, spacing, Tone, toneColors, typography } from '../theme';
 
@@ -294,15 +295,21 @@ export function HeroState({
   children?: ReactNode;
 }) {
   const t = toneColors[tone];
+  // Success + check gets the pen-stroke animation instead of the static icon.
+  const drawnCheck = !busy && tone === 'success' && icon === 'check';
   return (
     <View style={styles.hero}>
-      <View style={[styles.heroIcon, { backgroundColor: t.bg }]}>
-        {busy ? (
-          <ActivityIndicator size="large" color={t.fg} />
-        ) : (
-          <Icon name={icon} size={36} color={t.fg} />
-        )}
-      </View>
+      {drawnCheck ? (
+        <AnimatedCheck />
+      ) : (
+        <View style={[styles.heroIcon, { backgroundColor: t.bg }]}>
+          {busy ? (
+            <ActivityIndicator size="large" color={t.fg} />
+          ) : (
+            <Icon name={icon} size={36} color={t.fg} />
+          )}
+        </View>
+      )}
       <Text style={styles.heroTitle}>{title}</Text>
       {subtitle ? <Text style={styles.heroSubtitle}>{subtitle}</Text> : null}
       {children}
