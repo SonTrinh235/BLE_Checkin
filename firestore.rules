@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isClubOwner(clubId) {
+      return signedIn() &&
+        get(/databases/$(database)/documents/clubs/$(clubId)).data.ownerId == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+
+      // "My clubs" index. The user manages their own entries; the club owner
+      // may also delete an entry when removing that member from the club.
+      match /clubs/{clubId} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+        allow delete: if isClubOwner(clubId);
+      }
+
+      // Check-in history. Written by the user themselves (BLE/QR) or by the
+      // owner of the referenced club (manual check-in).
+      match /checkinHistory/{entryId} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && (
+          request.auth.uid == uid ||
+          isClubOwner(request.resource.data.clubId)
+        );
+      }
+    }
+
+    match /clubs/{clubId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn() && request.auth.uid == resource.data.ownerId;
+
+      match /members/{uid} {
+        allow read: if signedIn();
+
+        // Join as a plain member, or (as the club owner) create the owner
+        // entry for yourself when the club is created.
+        allow create: if signedIn() && request.auth.uid == uid && (
+          request.resource.data.role == 'member' || isClubOwner(clubId)
+        );
+
+        // Members can edit their own profile fields (e.g. student ID) but
+        // cannot change their role.
+        allow update: if signedIn() && request.auth.uid == uid &&
+          request.resource.data.role == resource.data.role;
+
+        // A member can leave; the owner can remove anyone except themselves.
+        allow delete: if signedIn() && (
+          (request.auth.uid == uid && resource.data.role != 'owner') ||
+          (isClubOwner(clubId) && request.auth.uid != uid)
+        );
+      }
+
+      // Only the club owner can open and close sessions.
+      match /sessions/{sessionId} {
+        allow read: if signedIn();
+        allow create, update: if isClubOwner(clubId);
+
+        match /checkins/{uid} {
+          allow read: if signedIn();
+          // A member writes their own check-in; the club owner may also
+          // mark any member present by hand (manual check-in).
+          allow write: if signedIn() && (
+            request.auth.uid == uid || isClubOwner(clubId)
+          );
+        }
+      }
+    }
+  }
+}
