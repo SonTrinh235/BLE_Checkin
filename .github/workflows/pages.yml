@@ -1,10 +1,10 @@
 name: Deploy landing page
 
 # Publishes only the static landing/ folder to GitHub Pages.
-# Runs on every push to master that touches landing/, or manually.
+# Runs on every push to main/master that touches landing/, or manually.
 on:
   push:
-    branches: [master]
+    branches: [main, master]
     paths:
       - 'landing/**'
       - '.github/workflows/pages.yml'
