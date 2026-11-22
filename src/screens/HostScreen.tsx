@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, View } from 'react-native';
 import * as BLE from 'react-native-ble-lite';
-import { CHECKIN_SERVICE_UUID, randomSessionCode } from '../ble/constants';
+import { randomSessionCode, sessionServiceUuid } from '../ble/constants';
 import { requestBlePermissions } from '../ble/permissions';
 
 export default function HostScreen() {
@@ -31,11 +31,11 @@ export default function HostScreen() {
 
     try {
       await BLE.startAdvertising({
-        serviceUuid: CHECKIN_SERVICE_UUID,
-        data: sessionCode,
+        serviceUuid: sessionServiceUuid(sessionCode),
+        data: '',
         powerLevel: BLE.AdvertisePower.HIGH,
         advertiseMode: BLE.AdvertiseMode.LOW_LATENCY,
-        includeDeviceName: true,
+        includeDeviceName: false,
       });
       startedRef.current = true;
       setIsAdvertising(true);
@@ -51,7 +51,7 @@ export default function HostScreen() {
       <Text style={styles.label}>Host — check-in session</Text>
       <Text style={styles.code}>{sessionCode.toUpperCase()}</Text>
       <Text style={styles.hint}>
-        Session code — should match what the scanning device sees.
+        Nhập mã này trên máy quét (vai trò sinh viên) để bắt đúng tín hiệu.
       </Text>
 
       <View style={styles.button}>

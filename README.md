@@ -57,6 +57,7 @@ Không dùng được Expo Go vì có module native (Bluetooth, camera): phải 
 | `firestore.rules` | Quy tắc bảo mật Firestore |
 | `landing/` | Landing page tĩnh (deploy bằng GitHub Pages) |
 | `.github/workflows/pages.yml` | Tự động deploy landing page |
+| `.github/workflows/ios-unsigned-ipa.yml` | Build IPA iOS chưa ký (chạy tay) |
 
 ## Chạy dự án
 
@@ -110,8 +111,14 @@ Hosting/Storage/Analytics. Sau khi sửa `firestore.rules` trong repo, phải
 - App chưa có tab riêng cho người tổ chức như Figma (vai trò tính theo từng CLB,
   công cụ tổ chức nằm trong Chi tiết CLB).
 - Chưa có thông báo đẩy, chưa có sửa phiên / kiểm tra trùng tên CLB.
-- Chưa kiểm thử trên iPhone (cần máy Mac hoặc tài khoản Apple Developer trả phí
-  để build iOS).
+- Chưa kiểm thử trên iPhone. Có thể build và cài miễn phí, không cần Mac:
+  xem **[HUONG_DAN_IOS.md](HUONG_DAN_IOS.md)** (GitHub Actions + Sideloadly,
+  app sống 7 ngày). iPhone chỉ phát Bluetooth khi app đang mở và sáng màn hình.
+- Mã phiên được mã hoá trong **service UUID** (`src/ble/constants.ts`) thay vì
+  service data, vì iOS không phát được service data và Android bị tràn gói
+  quảng bá 31 byte với UUID 128-bit + dữ liệu. Nhờ đó cả 4 tổ hợp chủ nhiệm /
+  thành viên (Android, iPhone) dùng chung một giao thức. Chưa kiểm thử trên máy thật.
+- BLE lab test: máy quét phải nhập mã phiên hiển thị trên máy chủ.
 
 ## Nhóm thực hiện
 

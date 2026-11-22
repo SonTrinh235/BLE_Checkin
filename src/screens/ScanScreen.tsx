@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as BLE from 'react-native-ble-lite';
-import { CHECKIN_SERVICE_UUID } from '../ble/constants';
+import { sessionServiceUuid } from '../ble/constants';
 import { requestBlePermissions } from '../ble/permissions';
 
 const RSSI_HISTORY_LENGTH = 10;
@@ -20,6 +20,7 @@ function average(values: number[]): number {
 export default function ScanScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const [devices, setDevices] = useState<Record<string, DiscoveredDevice>>({});
   const startedRef = useRef(false);
 
@@ -33,6 +34,10 @@ export default function ScanScreen() {
 
   const start = useCallback(async () => {
     setError(null);
+    if (code.trim().length < 3) {
+      setError('Nhập mã phiên hiển thị trên máy chủ (VD: A1B2).');
+      return;
+    }
     const granted = await requestBlePermissions();
     if (!granted) {
       Alert.alert(
@@ -44,7 +49,7 @@ export default function ScanScreen() {
 
     try {
       await BLE.startScanning({
-        serviceUuid: CHECKIN_SERVICE_UUID,
+        serviceUuid: sessionServiceUuid(code),
         scanMode: BLE.ScanMode.LOW_LATENCY,
         allowDuplicates: true,
       });
@@ -53,11 +58,11 @@ export default function ScanScreen() {
     } catch (err) {
       setError(String(err));
     }
-  }, []);
+  }, [code]);
 
   useEffect(() => {
     const subscription = BLE.addAdvertisementListener((event) => {
-      if (event.uuid !== CHECKIN_SERVICE_UUID) return;
+      if (event.uuid.toLowerCase() !== sessionServiceUuid(code)) return;
       setDevices((prev) => {
         const existing = prev[event.deviceId];
         const rssiHistory = [...(existing?.rssiHistory ?? []), event.rssi].slice(
@@ -67,7 +72,7 @@ export default function ScanScreen() {
           ...prev,
           [event.deviceId]: {
             deviceId: event.deviceId,
-            sessionCode: event.data,
+            sessionCode: code,
             rssiHistory,
             lastSeenAt: Date.now(),
           },
@@ -75,7 +80,7 @@ export default function ScanScreen() {
       });
     });
     return () => subscription.remove();
-  }, []);
+  }, [code]);
 
   useEffect(() => stop, [stop]);
 
@@ -84,6 +89,17 @@ export default function ScanScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Student — scan for host</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Mã phiên của máy chủ (VD: A1B2)"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        maxLength={4}
+        editable={!isScanning}
+        value={code}
+        onChangeText={setCode}
+      />
 
       <View style={styles.row}>
         <View style={styles.button}>
@@ -131,6 +147,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, paddingTop: 48 },
   label: { fontSize: 16, color: '#555', marginBottom: 12 },
   row: { flexDirection: 'row', gap: 12 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    fontSize: 16,
+  },
   button: { marginRight: 12, minWidth: 140 },
   status: { fontSize: 14, marginTop: 12 },
   error: { color: 'crimson', marginTop: 12 },

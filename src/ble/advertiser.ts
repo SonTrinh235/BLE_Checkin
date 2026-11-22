@@ -1,5 +1,5 @@
 import * as BLE from 'react-native-ble-lite';
-import { CHECKIN_SERVICE_UUID } from './constants';
+import { sessionServiceUuid } from './constants';
 import { requestBlePermissions } from './permissions';
 
 // Advertising lives at module level (not inside a screen) so the owner can
@@ -36,11 +36,14 @@ async function doStart(session: AdvertiseTarget): Promise<AdvertiseResult> {
 
   try {
     await BLE.startAdvertising({
-      serviceUuid: CHECKIN_SERVICE_UUID,
-      data: session.bleCode,
+      // Session code is carried by the UUID itself (see constants.ts); no
+      // service data or device name, which keeps the packet tiny on Android
+      // and is all iOS can send anyway.
+      serviceUuid: sessionServiceUuid(session.bleCode),
+      data: '',
       powerLevel: BLE.AdvertisePower.HIGH,
       advertiseMode: BLE.AdvertiseMode.LOW_LATENCY,
-      includeDeviceName: true,
+      includeDeviceName: false,
     });
     current = { sessionId: session.id, clubId: session.clubId };
     return 'advertising';

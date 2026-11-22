@@ -1,0 +1,66 @@
+name: Build iOS IPA (unsigned)
+
+# Builds an UNSIGNED .ipa on a GitHub macOS runner (free for public repos).
+# The file is then signed on your own PC with Sideloadly using a free Apple
+# ID — see HUONG_DAN_IOS.md. Manual trigger only, so it never runs by itself:
+# GitHub -> Actions -> "Build iOS IPA (unsigned)" -> Run workflow.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # package-lock.json is git-ignored in this repo, so `npm ci` can't be used.
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          node -v
+          pod --version
+
+      # Generates the native ios/ project from app.json (and runs `pod install`).
+      - name: Expo prebuild (iOS)
+        run: npx expo prebuild --platform ios
+
+      - name: Build Release .app without code signing
+        run: |
+          cd ios
+          WORKSPACE=$(ls -d *.xcworkspace | head -n 1)
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          echo "Workspace: $WORKSPACE  Scheme: $SCHEME"
+          xcodebuild build \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tail -n 60
+
+      - name: Package .ipa
+        run: |
+          APP=$(ls -d ios/build/Build/Products/Release-iphoneos/*.app | head -n 1)
+          echo "App bundle: $APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry diem-danh-gan-unsigned.ipa Payload
+          ls -lh diem-danh-gan-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diem-danh-gan-unsigned-ipa
+          path: diem-danh-gan-unsigned.ipa
+          retention-days: 14
