@@ -2,10 +2,14 @@ name: Build iOS IPA (unsigned)
 
 # Builds an UNSIGNED .ipa on a GitHub macOS runner (free for public repos).
 # The file is then signed on your own PC with Sideloadly using a free Apple
-# ID — see HUONG_DAN_IOS.md. Manual trigger only, so it never runs by itself:
-# GitHub -> Actions -> "Build iOS IPA (unsigned)" -> Run workflow.
+# ID — see HUONG_DAN_IOS.md.
+# The manual "Run workflow" button only appears once this file is on the
+# default branch. Until then it also runs on every push to ios-ble.
+# TODO: remove the push trigger after merging to the default branch.
 on:
   workflow_dispatch:
+  push:
+    branches: [ios-ble]
 
 jobs:
   build:
