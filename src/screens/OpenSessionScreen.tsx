@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as BLE from 'react-native-ble-lite';
 import QRCode from 'react-native-qrcode-svg';
@@ -29,6 +29,7 @@ import {
   TextField,
 } from '../components/ui';
 import { colors, radius, spacing, typography } from '../theme';
+import Icon from '../components/Icon';
 import { formatElapsed, formatTime, methodLabel, methodTone } from '../ui/labels';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OpenSession'>;
@@ -52,6 +53,7 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
   const [title, setTitle] = useState('');
   const [room, setRoom] = useState('');
   const [duration, setDuration] = useState<number | null>(60);
@@ -156,21 +158,18 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
     advertisedSessionId.current = null;
     try {
       await closeSession(clubId, session.id);
+      setConfirmClose(false);
       if (auto) Alert.alert('Phiên đã hết giờ', 'Phiên điểm danh đã tự đóng khi hết thời lượng.');
       navigation.goBack();
     } catch (err) {
       setClosing(false);
+      setConfirmClose(false);
       if (auto) autoClosedRef.current = null;
       Alert.alert('Không đóng được phiên', String((err as Error)?.message ?? err));
     }
   };
 
-  const onClose = () => {
-    Alert.alert('Đóng phiên điểm danh?', 'Sinh viên sẽ không thể điểm danh thêm sau khi đóng.', [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Đóng phiên', style: 'destructive', onPress: () => void doClose() },
-    ]);
-  };
+  const onClose = () => setConfirmClose(true);
 
   if (!session) {
     return (
@@ -231,6 +230,7 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   }
 
   const qrValue = JSON.stringify({ clubId, sessionId: session.id });
+  const manualCount = checkins.filter((c) => c.method === 'manual').length;
   const endsAt = sessionEndsAt(session);
   const timerLabel =
     endsAt !== null ? `CÒN ${formatElapsed(endsAt - now)}` : `ĐANG MỞ · ${formatElapsed(now - session.openedAt)}`;
@@ -257,6 +257,59 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
       contentStyle={styles.content}
       footer={<Button title="Đóng điểm danh" variant="danger" onPress={onClose} loading={closing} />}
     >
+      <Modal
+        visible={confirmClose}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          if (!closing) setConfirmClose(false);
+        }}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => {
+            if (!closing) setConfirmClose(false);
+          }}
+          accessibilityLabel="Đóng hộp thoại"
+        >
+          {/* Inner Pressable swallows taps so touching the sheet doesn't dismiss it. */}
+          <Pressable style={styles.sheet} onPress={() => undefined}>
+            <View style={styles.sheetWarn}>
+              <Icon name="alert" size={44} color={colors.warning} />
+              <Text style={styles.sheetTitle}>Đóng phiên điểm danh?</Text>
+              <Text style={styles.sheetSubtitle}>
+                Sinh viên sẽ không thể điểm danh thêm bằng BLE hoặc QR.
+              </Text>
+            </View>
+
+            <Card>
+              <Text style={styles.sheetSession}>{session.title}</Text>
+              <Text style={styles.sheetMeta}>
+                {`${checkins.length} người đã điểm danh`}
+                {manualCount > 0 ? ` · ${manualCount} bản ghi thủ công` : ''}
+              </Text>
+            </Card>
+
+            <Text style={styles.sheetNote}>
+              Danh sách được lưu vào lịch sử. Không chỉnh sửa bản ghi điểm danh trong phiên bản MVP.
+            </Text>
+
+            <Button
+              title="Đóng và lưu danh sách"
+              variant="danger"
+              onPress={() => void doClose()}
+              loading={closing}
+            />
+            <Button
+              title="Tiếp tục điểm danh"
+              variant="secondary"
+              onPress={() => setConfirmClose(false)}
+              disabled={closing}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Text style={styles.sessionTitle}>{session.title}</Text>
       {session.room ? <Text style={styles.sessionMeta}>Phòng {session.room}</Text> : null}
 
@@ -353,6 +406,27 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.md },
+  backdrop: { flex: 1, backgroundColor: 'rgba(23, 23, 23, 0.45)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  sheetWarn: {
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.xl,
+  },
+  sheetTitle: { ...typography.title, color: colors.warning, textAlign: 'center' },
+  sheetSubtitle: { ...typography.body, color: colors.muted, textAlign: 'center' },
+  sheetSession: { ...typography.section, color: colors.text },
+  sheetMeta: { ...typography.small, color: colors.muted },
+  sheetNote: { ...typography.small, color: colors.muted },
   sessionTitle: { ...typography.title, color: colors.primary },
   sessionMeta: { ...typography.small, color: colors.muted, marginTop: -spacing.sm },
   summary: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.xl, gap: 4 },
