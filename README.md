@@ -1,175 +1,115 @@
-# Điểm danh gần
+# BLE Check-in (Điểm danh gần)
 
-BLE proximity check-in app for student clubs. This repo currently has a
-rough (not yet device-tested) implementation of the full MVP scope from the
-project brief: auth, clubs, BLE/QR check-in sessions, history, and CSV
-report export — plus the original raw BLE two-device test bench used to
-validate the core technical risk (§9 of the brief).
+**Một lần chạm. Một lần có mặt.**
 
-**Nothing here has been run on a device yet.** It type-checks and passes
-`expo-doctor`, but it needs a Firebase project wired up and a fresh dev
-client build (see below) before it can actually be tested.
+Ứng dụng di động điểm danh bằng Bluetooth (BLE) cho câu lạc bộ sinh viên. Điện
+thoại của người tổ chức phát tín hiệu Bluetooth trong phòng, sinh viên ở gần được
+nhận diện tự động; mã QR là phương án dự phòng. Chủ nhiệm theo dõi danh sách theo
+thời gian thực và xuất báo cáo CSV.
 
-## UI
+| Liên kết | |
+|---|---|
+| Landing page | https://sontrinh235.github.io/BLE_Checkin/ |
+| Mã nguồn | https://github.com/SonTrinh235/BLE_Checkin |
+| Figma (thiết kế) | _cập nhật sau_ |
+| Figma prototype | _cập nhật sau_ |
+| Behance case study | _cập nhật sau_ |
 
-The UI follows the Figma "BLE / Design system" board. Tokens live in
-`src/theme/index.ts`, shared components in `src/components/ui.tsx`, icons in
-`src/components/Icon.tsx`. Navigation is a native stack with a bottom-tab
-home (Trang chủ / Lịch sử / Cá nhân) — see `src/navigation/RootNavigator.tsx`.
+> Dự án môn học. Trạng thái: **prototype**. App đã chạy được trên máy ảo Android;
+> **phần Bluetooth thật chưa được kiểm thử trên 2 thiết bị thật** (xem mục
+> [Kiểm thử](#kiểm-thử)).
 
-## Landing page
+## Tính năng
 
-`landing/` is a static, responsive page (no build step). Open
-`landing/index.html` locally, or deploy the folder to GitHub Pages /
-Netlify / Vercel / Cloudflare Pages. Fill in the public Behance and Figma
-prototype URLs in the `LINKS` object at the bottom of `landing/index.html`;
-until then those buttons stay disabled.
+- Đăng ký / đăng nhập bằng email (Firebase Authentication), có mã sinh viên tuỳ chọn.
+- Tạo CLB (có mã tham gia ngẫu nhiên) hoặc tham gia CLB bằng mã; chủ nhiệm có thể
+  xoá thành viên, thành viên có thể rời CLB.
+- Chủ nhiệm mở phiên điểm danh: tên buổi, phòng, thời lượng (30 phút / 1 giờ /
+  2 giờ / không giới hạn), đồng hồ đếm ngược, tự đóng khi hết giờ.
+- Điểm danh bằng Bluetooth hoặc quét QR; đầy đủ các trạng thái lỗi (không thấy
+  tín hiệu, chưa cấp quyền, mã sai phiên, phiên đã đóng/hết giờ…).
+- Chủ nhiệm xem danh sách điểm danh trực tiếp, tìm theo tên / mã sinh viên, điểm
+  danh thủ công cho thành viên.
+- Hoạt động khi mất mạng: điểm danh được lưu trên máy, tự đồng bộ khi có mạng lại.
+- Lịch sử điểm danh của từng người; danh sách các phiên và chi tiết từng phiên.
+- Xuất báo cáo CSV theo cả CLB hoặc theo từng phiên.
+- Công cụ **BLE lab test** (tab Cá nhân) để đo cường độ tín hiệu (RSSI) giữa 2 máy.
 
-## App structure
+## Công nghệ
 
-- **Auth** (`src/auth/AuthContext.tsx`, `src/screens/LoginScreen.tsx`,
-  `SignupScreen.tsx`) — Firebase email/password auth.
-- **Clubs** (`src/data/clubs.ts`, `ClubListScreen.tsx`,
-  `CreateJoinClubScreen.tsx`, `ClubDetailScreen.tsx`) — create a club (gets
-  a random join code) or join one by code. Membership is stored both under
-  the club (`clubs/{id}/members`) and under the user
-  (`users/{uid}/clubs`) so "my clubs" is a single cheap query.
-- **Sessions** (`src/data/sessions.ts`, `OpenSessionScreen.tsx`,
-  `CheckInScreen.tsx`) — the club owner opens a session, which starts BLE
-  advertising (via `react-native-ble-lite`) and shows a QR code as a
-  fallback. Members either let BLE auto-detect the host, or scan the QR
-  code with the camera (`expo-camera`).
-- **Offline queue** (`src/data/offlineQueue.ts`) — a check-in is written to
-  local storage first, then synced to Firestore; a `NetInfo` listener
-  retries the queue when connectivity returns. This is deliberately a
-  custom queue rather than relying on Firestore's own offline cache,
-  because the JS SDK's React Native persistence behavior isn't reliably
-  documented — see the code comment there.
-- **History & report** (`src/data/history.ts`, `HistoryScreen.tsx`,
-  `src/data/reportExport.ts`) — per-user check-in history, and a CSV export
-  per club (session × member × method × time) shared via `expo-sharing`.
-- **BLE lab test** (`src/screens/BleLabTestScreen.tsx`, reachable from the
-  club list screen) — the original standalone host/scan screens with live
-  RSSI readings, kept as a separate tool for walking a real venue and
-  judging signal stability, independent of any club/session data.
+Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation (stack + bottom
+tabs) · Firebase Authentication + Firestore · `react-native-ble-lite` ·
+`expo-camera` · `react-native-svg` / `react-native-qrcode-svg`.
 
-## Set up Firebase (required before anything will run)
+Không dùng được Expo Go vì có module native (Bluetooth, camera): phải dùng
+**dev client** (build bằng EAS).
 
-1. Go to <https://console.firebase.google.com>, create a free project.
-2. **Authentication** → Sign-in method → enable **Email/Password**.
-3. **Firestore Database** → create a database (test mode is fine while
-   developing — it auto-locks after 30 days; see `firestore.rules` below
-   for something to paste in before then).
-4. Project settings → your apps → add a **Web app** (yes, even though this
-   is a mobile app — the Firebase JS SDK used here is the "web" client
-   SDK, same as any Expo/React Native app that isn't using
-   `@react-native-firebase`). Copy the resulting config object.
-5. Paste those values into `src/firebase/config.ts`, replacing the
-   `REPLACE_ME` placeholders.
-6. In the Firebase console's Firestore **Rules** tab, paste the contents of
-   `firestore.rules` (in this repo) and publish. It's intentionally
-   simplified for a course prototype — see the comment in that file for
-   what's cut.
+## Cấu trúc thư mục
 
-## Build the dev client
+| Thư mục | Nội dung |
+|---|---|
+| `src/theme`, `src/components`, `src/ui` | Design tokens, component dùng chung, nhãn hiển thị |
+| `src/screens` | Các màn hình |
+| `src/navigation` | Stack + bottom tabs |
+| `src/data` | Firestore, hàng đợi offline, xuất CSV |
+| `src/ble` | Hằng số và xin quyền Bluetooth |
+| `src/auth`, `src/firebase` | Đăng nhập, cấu hình Firebase |
+| `firestore.rules` | Quy tắc bảo mật Firestore |
+| `landing/` | Landing page tĩnh (deploy bằng GitHub Pages) |
+| `.github/workflows/pages.yml` | Tự động deploy landing page |
 
-New native modules were added since the original BLE-only prototype
-(`expo-camera`, `@react-native-community/netinfo`,
-`@react-native-async-storage/async-storage`, `react-native-svg`) — if
-you already built an APK before this change, it's now missing those
-modules and needs a fresh build.
+## Chạy dự án
+
+Hướng dẫn từng bước (cài đặt, Firebase, build, máy ảo, lỗi thường gặp) nằm trong
+**[HUONG_DAN_CHAY.md](HUONG_DAN_CHAY.md)**. Tóm tắt:
 
 ```bash
-npx eas login                # first time only
-npx eas build --profile development --platform android
-```
-
-Physical Android device only — BLE doesn't work in an emulator. (iOS
-needs a paid Apple Developer account to install on a real iPhone; see the
-git history / prior discussion in this project for why — plan Android↔
-Android testing first.)
-
-## Run it
-
-```bash
+npm install
+npx eas build --profile development --platform android   # một lần
 npx expo start --dev-client
 ```
 
-Open the dev client app on each phone and scan the QR code.
+Kiểm tra kiểu: `npm run typecheck`.
 
-## Test procedure (real app flow)
+## Firebase
 
-1. Sign up two accounts (one per phone).
-2. Phone A: create a club → note the join code shown in **Chi tiết CLB**.
-3. Phone B: join that club with the code.
-4. Phone A (owner): open the club → **Mở phiên điểm danh mới** — this
-   starts BLE advertising and shows a QR code.
-5. Phone B (member): open the club → **Điểm danh ngay** → try
-   **Điểm danh bằng Bluetooth** first; if that doesn't fire within
-   a few seconds, fall back to **Quét mã QR**.
-6. Confirm phone A's screen shows the check-in appear live, and phone B
-   shows "Bạn đã có mặt".
-7. Turn on airplane mode on phone B *before* checking in, confirm it still
-   marks itself as checked in locally, then turn network back on and
-   confirm the pending badge on the Lịch sử tab clears (this is the
-   offline-queue path).
-8. Phone A (owner): **Xuất báo cáo (CSV)** from the club detail screen,
-   confirm the share sheet opens with a CSV containing the check-in.
+Dự án dùng **Authentication (Email/Password)** và **Firestore**, không dùng
+Hosting/Storage/Analytics. Sau khi sửa `firestore.rules` trong repo, phải
+**Publish lại** trong Firebase console (tab Rules), nếu không app sẽ báo
+`Missing or insufficient permissions`. Cấu hình web của Firebase nằm trong
+`src/firebase/config.ts`.
 
-## Test procedure (raw BLE lab test — RSSI validation)
+## Kiểm thử
 
-This is the original §9 prototype, unchanged, reachable via **Mở BLE lab test**
-on the **Cá nhân** (Profile) tab:
+- **Một máy ảo:** đăng ký, tạo CLB, mở phiên, hiện QR, điểm danh thủ công, tìm
+  kiếm, đóng phiên, xuất CSV. Máy ảo không có Bluetooth/camera.
+- **Hai máy ảo:** ở bản dev, tab **Cá nhân → Giả lập điểm danh** chạy đúng luồng
+  điểm danh thật cho phiên đang mở (nút này không có ở bản production). Kiểm tra
+  được đồng bộ thời gian thực và quy tắc Firestore giữa hai tài khoản.
+- **Hai điện thoại Android thật:** cần cho Bluetooth và quét QR bằng camera.
+  Máy A (chủ nhiệm) mở phiên; máy B (tài khoản khác) tham gia bằng mã CLB rồi
+  điểm danh bằng Bluetooth, thử thêm QR. Thử chế độ máy bay trên máy B để kiểm
+  tra hàng đợi offline.
+- **BLE lab test:** máy A chọn "I'm the host", máy B chọn "I'm a student", sau đó
+  mang máy B đi xa dần qua cửa/tường và ghi RSSI để chọn ngưỡng "trong phòng".
 
-1. Phone A → "I'm the host (advertise)" → note the session code.
-2. Phone B → "I'm a student (scan)" → Start scanning.
-3. Confirm phone B shows the same code, then walk it away from phone A
-   through doorways/walls, recording RSSI at each distance — the goal is a
-   defensible RSSI threshold for "in the room" vs. "just outside."
+## Hạn chế đã biết
 
-## Known limitation (state this openly in any report)
+- Bluetooth xác nhận **thiết bị** có mặt, không xác nhận **người dùng**: có thể
+  mang hộ điện thoại của bạn vào phòng. Đây là hạn chế đã biết, không phải lỗi.
+- Bảo mật ở mức prototype: mọi người đã đăng nhập đều đọc được mã tham gia của
+  các CLB; việc đóng phiên và kiểm tra thành viên chủ yếu do app thực hiện. Chưa
+  đủ để triển khai thật.
+- Điểm danh offline vào phiên đã đóng trước khi máy có mạng lại không bị chặn
+  (rules chưa kiểm tra trạng thái phiên).
+- BLE chỉ phát khi chủ nhiệm đang ở màn **Mở phiên**; rời màn hình thì dừng phát
+  (phiên vẫn mở).
+- App chưa có tab riêng cho người tổ chức như Figma (vai trò tính theo từng CLB,
+  công cụ tổ chức nằm trong Chi tiết CLB).
+- Chưa có thông báo đẩy, chưa có sửa phiên / kiểm tra trùng tên CLB.
+- Chưa kiểm thử trên iPhone (cần máy Mac hoặc tài khoản Apple Developer trả phí
+  để build iOS).
 
-BLE proximity confirms the **device** was physically present, not the
-**person**. It doesn't stop someone from carrying a friend's phone into
-the room. This is a disclosed, accepted limitation — not a bug to hide.
+## Nhóm thực hiện
 
-## Front-end status
-
-Screens follow the Figma board: Welcome, Login, Signup (with optional
-student ID), Home (clubs, live-session badge), Club detail, Open session
-(title + room, live count, show/hide QR, search, manual check-in), Manual
-check-in, Sessions list + detail, Check-in (BLE / QR with every error
-state), Success receipt, History, Profile (student ID, BLE lab).
-
-**After pulling these changes, re-publish `firestore.rules`** — the rules
-were tightened (owner-only sessions, owner can remove members and write
-manual check-in history).
-
-Implemented beyond the original board:
-- Sessions have a fixed duration (30 min / 1 h / 2 h / unlimited). The
-  owner screen shows a countdown and auto-closes the session at zero;
-  members get a "Phiên đã hết giờ" screen if they try to check in late.
-- Manual check-in also writes the member's own history entry, so it shows
-  up in their Lịch sử tab.
-- Editing the student ID in Profile updates it in every club the user
-  already joined.
-- Owners can remove members; members can leave a club (Club detail).
-- Firestore rules: only the club owner can open/close sessions.
-
-Known gaps vs. the Figma board:
-- Organizer-specific 4-tab bar is not implemented — roles are per club, so
-  there are 3 global tabs and organizer tools live inside Club detail.
-
-## What's rough / not done
-
-- No push notifications yet (Firebase Cloud Messaging, per the brief) —
-  not needed until the scheduling/reminder phase.
-- No duplicate-club-name checks and no session editing — create/join/
-  open/close/check-in/remove-member is the whole loop.
-- A queued offline check-in for a session that closes before the phone
-  reconnects is rejected by nothing today (rules don't check session
-  status) — acceptable for a prototype.
-- Run `npm run typecheck` before committing.
-- Everything above is **untested on a real device** — the RSSI behavior,
-  the BLE code path end-to-end, and the offline queue all still need the
-  real two-device pass described above.
+_Điền tên thành viên._
