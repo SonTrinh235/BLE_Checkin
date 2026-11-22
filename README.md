@@ -100,10 +100,13 @@ Hosting/Storage/Analytics. Sau khi sửa `firestore.rules` trong repo, phải
 - Bảo mật ở mức prototype: mọi người đã đăng nhập đều đọc được mã tham gia của
   các CLB; việc đóng phiên và kiểm tra thành viên chủ yếu do app thực hiện. Chưa
   đủ để triển khai thật.
-- Điểm danh offline vào phiên đã đóng trước khi máy có mạng lại không bị chặn
-  (rules chưa kiểm tra trạng thái phiên).
-- BLE chỉ phát khi chủ nhiệm đang ở màn **Mở phiên**; rời màn hình thì dừng phát
-  (phiên vẫn mở).
+- Rules không kiểm tra trạng thái phiên khi ghi điểm danh. Cố ý: nếu kiểm tra
+  lúc đồng bộ thì điểm danh hợp lệ làm khi mất mạng sẽ bị từ chối khi có mạng lại.
+- BLE vẫn phát khi chủ nhiệm rời màn **Mở phiên**, nhưng chỉ khi app còn chạy;
+  tắt hẳn app thì dừng phát (phiên vẫn mở). Phần này chưa kiểm thử trên máy thật.
+- Phiên hết giờ chỉ được đóng trong Firestore khi app của chủ nhiệm đang mở (chưa
+  có xử lý phía máy chủ). Thành viên vẫn thấy phiên đó là đã đóng. Giờ hết hạn
+  dùng độ lệch đồng hồ đo với Firestore để các máy không lệch nhau.
 - App chưa có tab riêng cho người tổ chức như Figma (vai trò tính theo từng CLB,
   công cụ tổ chức nằm trong Chi tiết CLB).
 - Chưa có thông báo đẩy, chưa có sửa phiên / kiểm tra trùng tên CLB.
