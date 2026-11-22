@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
+import { RootStackParamList } from '../navigation/types';
 import { subscribeMyClubs } from '../data/clubs';
 import { checkIn } from '../data/checkin';
 import { isSessionExpired, subscribeActiveSession, subscribeCheckins } from '../data/sessions';
@@ -42,6 +45,7 @@ export default function DevSimulateCheckIn() {
 
 function ClubRow({ club }: { club: MyClub }) {
   const { user, studentId } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [session, setSession] = useState<CheckInSession | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,6 +82,8 @@ function ClubRow({ club }: { club: MyClub }) {
         studentId,
         method: 'ble',
       });
+      // Land on the real check-in screen, which shows the "Bạn đã có mặt!" receipt.
+      navigation.navigate('CheckIn', { clubId: club.clubId, clubName: club.name });
     } catch {
       setError('Chưa ghi nhận được. Thử lại.');
     } finally {
