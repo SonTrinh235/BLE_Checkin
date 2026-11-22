@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BLE Check-in — Một lần chạm. Một lần có mặt.</title>
+  <meta name="description" content="BLE Check-in: ứng dụng điểm danh bằng Bluetooth cho các câu lạc bộ sinh viên. QR khi cần, danh sách rõ ràng cho mỗi buổi sinh hoạt.">
+  <meta property="og:title" content="BLE Check-in — Một lần chạm. Một lần có mặt.">
+  <meta property="og:description" content="Điểm danh bằng Bluetooth cho CLB sinh viên. QR dự phòng, báo cáo CSV.">
+  <meta property="og:image" content="assets/phone-home.png">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Bỏ qua điều hướng</a>
+
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="#top"><img src="assets/logo.svg" alt="" width="32" height="32"> BLE Check-in</a>
+      <nav aria-label="Điều hướng chính">
+        <ul>
+          <li><a href="#problem">Vấn đề</a></li>
+          <li><a href="#solution">Giải pháp</a></li>
+          <li><a href="#features">Tính năng</a></li>
+          <li><a href="#screens">Giao diện</a></li>
+          <li><a href="#status">Tiến độ</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary" data-link="figma" href="#links">Xem prototype</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <div class="hero" id="top">
+      <div class="wrap">
+        <div>
+          <div class="eyebrow">BLE Check-in · Điểm danh gần</div>
+          <h1>Một lần chạm.<br>Một lần có mặt.</h1>
+          <p class="lead">Xác nhận hiện diện bằng Bluetooth, QR khi cần. Danh sách điểm danh rõ ràng cho mỗi buổi sinh hoạt của câu lạc bộ.</p>
+          <div class="cta">
+            <a class="btn btn-primary" data-link="behance" href="#links">Đọc case study</a>
+            <a class="btn btn-secondary" data-link="figma" href="#links">Thử prototype</a>
+          </div>
+          <div class="status-pill">Đang phát triển · Prototype</div>
+        </div>
+        <div class="phones" aria-label="Ba màn hình của ứng dụng">
+          <img class="phone" src="assets/phone-home.png" alt="Màn hình trang chủ: buổi sinh hoạt hôm nay và nút Điểm danh ngay" width="370" height="804">
+          <img class="phone" src="assets/phone-live.png" alt="Màn hình người tổ chức: phiên đang mở và số người đã điểm danh" width="370" height="804">
+          <img class="phone" src="assets/phone-success.png" alt="Màn hình xác nhận: Bạn đã có mặt" width="370" height="804">
+        </div>
+      </div>
+    </div>
+
+    <!-- Problem -->
+    <section id="problem" class="alt">
+      <div class="wrap">
+        <div class="eyebrow">Vấn đề</div>
+        <h2>Điểm danh ở CLB vẫn đang mất thời gian</h2>
+        <p class="section-lead">Gọi tên, chuyền giấy hay dán link form đều làm gián đoạn buổi sinh hoạt, và ban tổ chức phải tự tổng hợp danh sách sau đó.</p>
+        <div class="grid g3">
+          <div class="card tone-error"><h3>Chậm và gián đoạn</h3><p>Điểm danh thủ công chiếm đầu buổi, nhất là khi CLB đông người.</p></div>
+          <div class="card tone-error"><h3>Khó kiểm chứng</h3><p>Danh sách giấy hay form từ xa không cho biết ai thực sự có mặt tại phòng.</p></div>
+          <div class="card tone-error"><h3>Tổng hợp rời rạc</h3><p>Dữ liệu nằm ở nhiều nơi, khó xem lại lịch sử tham gia của từng thành viên.</p></div>
+        </div>
+
+        <h2 style="margin-top:56px">Dành cho ai</h2>
+        <div class="grid g2" style="margin-top:20px">
+          <div class="card tone-info"><h3>Sinh viên tham gia CLB</h3><p>Muốn điểm danh nhanh, không phải xếp hàng hay nhập tay, và xem lại các buổi mình đã tham dự.</p></div>
+          <div class="card tone-info"><h3>Ban tổ chức / chủ nhiệm CLB</h3><p>Cần mở phiên nhanh, theo dõi trực tiếp ai đã có mặt và xuất danh sách khi kết thúc.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Solution / UVP -->
+    <section id="solution">
+      <div class="wrap">
+        <div class="uvp">
+          <div class="eyebrow" style="color:#bae6fd">Giá trị cốt lõi</div>
+          <h2>Bluetooth trước, QR khi cần</h2>
+          <p>Người tổ chức mở phiên, điện thoại phát tín hiệu Bluetooth trong phòng. Sinh viên ở gần được nhận diện mà không cần thao tác phức tạp. Nếu Bluetooth không dùng được, mã QR là phương án dự phòng.</p>
+        </div>
+
+        <h2 style="margin-top:64px">Cách hoạt động</h2>
+        <ol class="steps" style="margin-top:24px">
+          <li><h3>Tạo hoặc tham gia CLB</h3><p>Chủ nhiệm tạo CLB và chia sẻ mã tham gia.</p></li>
+          <li><h3>Mở phiên</h3><p>Điện thoại bắt đầu phát tín hiệu và hiện mã QR dự phòng.</p></li>
+          <li><h3>Điểm danh</h3><p>Sinh viên đứng gần để tự nhận diện, hoặc quét mã QR.</p></li>
+          <li><h3>Đóng phiên và xuất CSV</h3><p>Xem danh sách theo thời gian thực, đóng phiên và xuất báo cáo.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="alt">
+      <div class="wrap">
+        <div class="eyebrow">Tính năng chính</div>
+        <h2>Đủ cho một buổi sinh hoạt, không thừa</h2>
+        <p class="section-lead">Phạm vi MVP tập trung vào vòng lặp tạo CLB, mở phiên, điểm danh, xem lịch sử và xuất báo cáo.</p>
+        <div class="grid g3">
+          <div class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg></div>
+            <h3>Điểm danh bằng Bluetooth</h3><p>Nhận diện thiết bị ở gần người tổ chức, tự động ghi nhận.</p>
+          </div>
+          <div class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M20 20h.01M17 20v-3"/></svg></div>
+            <h3>QR dự phòng</h3><p>Dùng khi Bluetooth bị tắt, thiết bị không hỗ trợ hoặc chưa cấp quyền.</p>
+          </div>
+          <div class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <h3>Theo dõi trực tiếp</h3><p>Người tổ chức thấy danh sách người có mặt cập nhật theo thời gian thực.</p>
+          </div>
+          <div class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <h3>Lịch sử điểm danh</h3><p>Sinh viên xem lại các buổi đã tham dự, kèm phương thức điểm danh.</p>
+          </div>
+          <div class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M5 12.86a10 10 0 0 1 5.17-2.69M2 8.82a15 15 0 0 1 4.17-2.65M22 8.82a15 15 0 0 0-11.29-3.76M2 2l20 20"/></svg></div>
+            <h3>Hoạt động khi mất mạng</h3><p>Điểm danh được lưu trên máy và tự đồng bộ khi có mạng lại.</p>
+          </div>
+          <div class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+            <h3>Xuất báo cáo CSV</h3><p>Danh sách theo phiên và thành viên, sẵn sàng chia sẻ hoặc mở bằng bảng tính.</p>
+          </div>
+        </div>
+
+        <h2 style="margin-top:56px">Lợi ích</h2>
+        <div class="grid g3" style="margin-top:20px">
+          <div class="card tone-success"><h3>Nhanh hơn</h3><p>Điểm danh gần như không cần thao tác khi dùng Bluetooth.</p></div>
+          <div class="card tone-success"><h3>Rõ ràng hơn</h3><p>Mỗi trạng thái đều có nhãn chữ, không chỉ dựa vào màu sắc.</p></div>
+          <div class="card tone-success"><h3>Gọn hơn</h3><p>Một nơi duy nhất cho danh sách, lịch sử và báo cáo của CLB.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screens -->
+    <section id="screens">
+      <div class="wrap">
+        <div class="eyebrow">Giao diện</div>
+        <h2>Thiết kế nhất quán, trạng thái luôn có nhãn</h2>
+        <p class="section-lead">Navy cho hành động, cyan cho kết nối. Mỗi trạng thái (đang tìm, không thấy tín hiệu, thiếu quyền, thành công) đều có thông điệp riêng.</p>
+        <div class="shots">
+          <figure><img src="assets/phone-home.png" alt="Trang chủ" width="370" height="804" loading="lazy"><figcaption>Trang chủ</figcaption></figure>
+          <figure><img src="assets/phone-live.png" alt="Điểm danh trực tiếp" width="370" height="804" loading="lazy"><figcaption>Điểm danh trực tiếp</figcaption></figure>
+          <figure><img src="assets/phone-success.png" alt="Điểm danh thành công" width="370" height="804" loading="lazy"><figcaption>Điểm danh thành công</figcaption></figure>
+        </div>
+        <div class="swatches" aria-label="Bảng màu design system">
+          <span class="sw"><i style="background:#1E3A8A"></i>Primary #1E3A8A</span>
+          <span class="sw"><i style="background:#1D4ED8"></i>Variant #1D4ED8</span>
+          <span class="sw"><i style="background:#0369A1"></i>Accent #0369A1</span>
+          <span class="sw"><i style="background:#15803D"></i>Success #15803D</span>
+          <span class="sw"><i style="background:#854D0E"></i>Warning #854D0E</span>
+          <span class="sw"><i style="background:#B91C1C"></i>Error #B91C1C</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Status + links -->
+    <section id="status" class="alt">
+      <div class="wrap">
+        <div class="grid g2">
+          <div>
+            <div class="eyebrow">Tình trạng phát triển</div>
+            <h2>Prototype đang được hoàn thiện</h2>
+            <ul class="status-list">
+              <li><span class="tag done">Xong</span> Thiết kế UI và design system</li>
+              <li><span class="tag done">Xong</span> Ứng dụng mobile: đăng nhập, CLB, phiên, điểm danh, lịch sử, xuất CSV</li>
+              <li><span class="tag todo">Đang làm</span> Kiểm thử trên thiết bị thật (Android ↔ Android)</li>
+              <li><span class="tag todo">Đang làm</span> Usability testing với người dùng ngoài nhóm</li>
+              <li><span class="tag todo">Sau này</span> Thông báo nhắc lịch, phân quyền chặt hơn</li>
+            </ul>
+            <p class="note">Giới hạn đã biết: Bluetooth xác nhận thiết bị có mặt tại phòng, không xác nhận người dùng.</p>
+          </div>
+          <div id="links">
+            <div class="eyebrow">Liên kết</div>
+            <h2>Xem thêm</h2>
+            <div class="links">
+              <a class="btn btn-primary" data-link="behance" href="#links">Case study trên Behance</a>
+              <a class="btn btn-secondary" data-link="figma" href="#links">Prototype Figma</a>
+            </div>
+            <p class="note" id="links-note" hidden>Liên kết sẽ được cập nhật khi case study và prototype được công khai.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 BLE Check-in · Dự án môn học</span>
+      <span>Một lần chạm. Một lần có mặt.</span>
+    </div>
+  </footer>
+
+  <script>
+    // Fill in the public URLs here once Behance / Figma are published.
+    // Empty string = button stays disabled instead of pointing nowhere.
+    var LINKS = { behance: '', figma: '' };
+
+    var missing = false;
+    document.querySelectorAll('[data-link]').forEach(function (el) {
+      var url = LINKS[el.getAttribute('data-link')];
+      if (url) {
+        el.href = url;
+        el.target = '_blank';
+        el.rel = 'noopener';
+      } else {
+        el.setAttribute('aria-disabled', 'true');
+        el.removeAttribute('href');
+        el.title = 'Sắp có';
+        missing = true;
+      }
+    });
+    if (missing) document.getElementById('links-note').hidden = false;
+  </script>
+</body>
+</html>
