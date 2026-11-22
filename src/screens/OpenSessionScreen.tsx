@@ -36,7 +36,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'OpenSession'>;
 
 const DURATION_OPTIONS: { label: string; value: number | null }[] = [
   // Dev-only: lets us exercise expiry/auto-close without waiting 30 minutes.
-  ...(__DEV__ ? [{ label: '1 phút (DEV)', value: 1 }] : []),
+  ...(__DEV__ ? [{ label: '2 phút (DEV)', value: 2 }] : []),
   { label: '30 phút', value: 30 },
   { label: '1 giờ', value: 60 },
   { label: '2 giờ', value: 120 },
