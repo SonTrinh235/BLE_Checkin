@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { subscribeCheckins, subscribeSessions } from '../data/sessions';
+import { isSessionExpired, subscribeCheckins, subscribeSessions } from '../data/sessions';
 import { CheckInSession } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
 import { Badge, Card, EmptyState, Header, Loading, Screen } from '../components/ui';
@@ -52,7 +52,7 @@ function SessionRow({ session, onPress }: { session: CheckInSession; onPress: ()
     () => subscribeCheckins(session.clubId, session.id, (r) => setCount(r.length)),
     [session.clubId, session.id]
   );
-  const open = session.status === 'open';
+  const open = session.status === 'open' && !isSessionExpired(session);
 
   return (
     <Card onPress={onPress}>

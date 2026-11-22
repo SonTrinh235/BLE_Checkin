@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { removeMember, subscribeClub, subscribeMembers } from '../data/clubs';
-import { subscribeActiveSession } from '../data/sessions';
+import { isSessionExpired, subscribeActiveSession } from '../data/sessions';
 import { exportClubReport } from '../data/reportExport';
 import { Club, CheckInSession, ClubMember } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
@@ -18,13 +18,25 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
   const [club, setClub] = useState<Club | null>(null);
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [memberError, setMemberError] = useState<string | null>(null);
-  const [activeSession, setActiveSession] = useState<CheckInSession | null>(null);
+  const [rawActiveSession, setActiveSession] = useState<CheckInSession | null>(null);
+  const [now, setNow] = useState(Date.now());
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => subscribeClub(clubId, setClub), [clubId]);
   useEffect(() => subscribeActiveSession(clubId, setActiveSession), [clubId]);
   useEffect(() => subscribeMembers(clubId, setMembers), [clubId]);
+  useEffect(() => {
+    if (!rawActiveSession?.durationMin) return;
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, [rawActiveSession?.id, rawActiveSession?.durationMin]);
+  // Members must not see an expired-but-unclosed session as live; the owner
+  // still sees it so they can open it and close it.
+  const activeSession =
+    rawActiveSession && (role === 'owner' || !isSessionExpired(rawActiveSession, now))
+      ? rawActiveSession
+      : null;
 
   const doRemove = async (uid: string, leaving: boolean) => {
     setMemberError(null);

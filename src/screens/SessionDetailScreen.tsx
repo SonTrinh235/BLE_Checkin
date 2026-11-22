@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { subscribeCheckins, subscribeSessions } from '../data/sessions';
+import { isSessionExpired, subscribeCheckins, subscribeSessions } from '../data/sessions';
 import { exportSessionReport } from '../data/reportExport';
 import { CheckInRecord, CheckInSession } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
@@ -37,7 +37,7 @@ export default function SessionDetailScreen({ route, navigation }: Props) {
   useEffect(() => subscribeCheckins(clubId, sessionId, setCheckins), [clubId, sessionId]);
 
   const sorted = [...checkins].sort((a, b) => a.checkedInAt - b.checkedInAt);
-  const open = session?.status === 'open';
+  const open = session?.status === 'open' && !isSessionExpired(session);
   const byMethod = {
     ble: checkins.filter((c) => c.method === 'ble').length,
     qr: checkins.filter((c) => c.method === 'qr').length,
