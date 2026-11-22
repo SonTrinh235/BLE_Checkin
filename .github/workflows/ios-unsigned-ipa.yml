@@ -32,6 +32,15 @@ jobs:
           node -v
           pod --version
 
+      # react-native-ble-lite@1.1.0's iOS Swift file does not compile
+      # (module class conforms to CoreBluetooth delegates without being an
+      # NSObject). Replace it with the fixed copy kept in patches/.
+      - name: Patch react-native-ble-lite iOS module
+        run: |
+          test -f node_modules/react-native-ble-lite/ios/ReactNativeBleLiteModule.swift
+          cp patches/react-native-ble-lite/ReactNativeBleLiteModule.swift \
+             node_modules/react-native-ble-lite/ios/ReactNativeBleLiteModule.swift
+
       # Generates the native ios/ project from app.json (and runs `pod install`).
       - name: Expo prebuild (iOS)
         run: npx expo prebuild --platform ios
