@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "Mobile_app",
-    "slug": "Mobile_app",
+    "name": "Điểm danh gần",
+    "slug": "diem-danh-gan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.diemdanhgan.prototype"
     },
     "android": {
+      "package": "com.diemdanhgan.prototype",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +22,28 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-ble-lite",
+        {
+          "bluetoothAlwaysPermission": "Điểm danh gần uses Bluetooth to find nearby devices for check-in",
+          "bluetoothPeripheralPermission": "Điểm danh gần uses Bluetooth to advertise your check-in session to nearby devices"
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Điểm danh gần uses the camera to scan check-in QR codes",
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6fe6ea46-1309-47b0-8b2c-e2ed674648cd"
+      }
     }
   }
 }
