@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import * as BLE from 'react-native-ble-lite';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../auth/AuthContext';
-import { CHECKIN_SERVICE_UUID } from '../ble/constants';
-import { requestBlePermissions } from '../ble/permissions';
+import { isAdvertising, startAdvertisingFor, stopAdvertising } from '../ble/advertiser';
+import { serverNow } from '../data/serverClock';
 import {
   closeSession,
   isSessionExpired,
@@ -23,6 +22,7 @@ import {
   Card,
   EmptyState,
   Header,
+  Loading,
   Screen,
   SectionTitle,
   StatusCard,
@@ -59,10 +59,17 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   const [duration, setDuration] = useState<number | null>(60);
   const [showQr, setShowQr] = useState(false);
   const [search, setSearch] = useState('');
-  const [now, setNow] = useState(Date.now());
-  const advertisedSessionId = useRef<string | null>(null);
+  const [now, setNow] = useState(serverNow());
+  const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => subscribeActiveSession(clubId, setSession), [clubId]);
+  useEffect(
+    () =>
+      subscribeActiveSession(clubId, (s) => {
+        setSession(s);
+        setLoaded(true);
+      }),
+    [clubId]
+  );
 
   useEffect(() => {
     if (!session) {
@@ -74,62 +81,32 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     if (!session) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(serverNow()), 1000);
     return () => clearInterval(t);
   }, [session?.id]);
 
-  // Starts advertising once per session id (a Firestore snapshot re-fires
-  // the effect on every unrelated field change, but re-advertising the
-  // same session is a no-op we want to skip).
+  // Advertising is owned by src/ble/advertiser.ts, not this screen: leaving
+  // the screen keeps broadcasting; it stops when the session closes/expires.
   useEffect(() => {
-    if (!session || advertisedSessionId.current === session.id) return;
-
+    if (!session) return;
+    if (isAdvertising(session.id)) {
+      setBleState('advertising');
+      return;
+    }
     let cancelled = false;
     setBleState('starting');
-    (async () => {
-      const granted = await requestBlePermissions();
-      if (cancelled) return;
-      if (!granted) {
-        setBleState('denied');
-        return;
-      }
-      try {
-        await BLE.startAdvertising({
-          serviceUuid: CHECKIN_SERVICE_UUID,
-          data: session.bleCode,
-          powerLevel: BLE.AdvertisePower.HIGH,
-          advertiseMode: BLE.AdvertiseMode.LOW_LATENCY,
-          includeDeviceName: true,
-        });
-        if (!cancelled) {
-          advertisedSessionId.current = session.id;
-          setBleState('advertising');
-        }
-      } catch {
-        if (!cancelled) setBleState('error');
-      }
-    })();
-
+    startAdvertisingFor(session).then((result) => {
+      if (!cancelled) setBleState(result);
+    });
     return () => {
       cancelled = true;
     };
   }, [session?.id, session?.bleCode, retryKey]);
 
-  // Session closed from elsewhere (e.g. another device) — stop advertising
-  // here too instead of leaving this device broadcasting a dead session.
+  // Session closed from elsewhere (e.g. another device): stop broadcasting.
   useEffect(() => {
-    if (!session && advertisedSessionId.current) {
-      BLE.stopAdvertising();
-      advertisedSessionId.current = null;
-      setBleState('starting');
-    }
-  }, [session]);
-
-  useEffect(() => {
-    return () => {
-      if (advertisedSessionId.current) BLE.stopAdvertising();
-    };
-  }, []);
+    if (loaded && !session) stopAdvertising();
+  }, [loaded, session]);
 
   const onOpen = async () => {
     if (!user) return;
@@ -154,8 +131,7 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   const doClose = async (auto = false) => {
     if (!session) return;
     setClosing(true);
-    BLE.stopAdvertising();
-    advertisedSessionId.current = null;
+    stopAdvertising();
     try {
       await closeSession(clubId, session.id);
       setConfirmClose(false);
@@ -170,6 +146,14 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   };
 
   const onClose = () => setConfirmClose(true);
+
+  if (!loaded) {
+    return (
+      <Screen header={<Header title={clubName} onBack={() => navigation.goBack()} />}>
+        <Loading />
+      </Screen>
+    );
+  }
 
   if (!session) {
     return (

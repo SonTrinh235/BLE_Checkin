@@ -6,6 +6,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { subscribeMyClubs } from '../data/clubs';
 import { isSessionExpired, subscribeActiveSession } from '../data/sessions';
+import { serverNow } from '../data/serverClock';
+import { useSessionHousekeeping } from '../hooks/useSessionHousekeeping';
 import { CheckInSession, MyClub } from '../types/models';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { Badge, Button, Card, EmptyState, Loading, PageTitle, Screen, StatusCard } from '../components/ui';
@@ -87,14 +89,23 @@ function ClubCard({
   onManage: () => void;
 }) {
   const [rawSession, setSession] = useState<CheckInSession | null>(null);
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => subscribeActiveSession(club.clubId, setSession), [club.clubId]);
+  const [now, setNow] = useState(serverNow());
+  const [loaded, setLoaded] = useState(false);
+  useEffect(
+    () =>
+      subscribeActiveSession(club.clubId, (s) => {
+        setSession(s);
+        setLoaded(true);
+      }),
+    [club.clubId]
+  );
   useEffect(() => {
     if (!rawSession?.durationMin) return;
-    const t = setInterval(() => setNow(Date.now()), 15_000);
+    const t = setInterval(() => setNow(serverNow()), 15_000);
     return () => clearInterval(t);
   }, [rawSession?.id, rawSession?.durationMin]);
   const isOwner = club.role === 'owner';
+  useSessionHousekeeping(club.clubId, rawSession, loaded, isOwner, now);
   // Members must not see an expired-but-unclosed session as live; the owner
   // still sees it so they can open it and close it.
   const session = rawSession && (isOwner || !isSessionExpired(rawSession, now)) ? rawSession : null;

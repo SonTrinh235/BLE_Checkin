@@ -14,6 +14,7 @@ import { db } from '../firebase/config';
 import { randomSessionCode } from '../ble/constants';
 import { CheckInRecord, CheckInSession } from '../types/models';
 import { timestampToMillis } from './firestoreUtil';
+import { serverNow } from './serverClock';
 
 function toSession(id: string, clubId: string, data: Record<string, unknown>): CheckInSession {
   return {
@@ -35,7 +36,7 @@ export function sessionEndsAt(session: CheckInSession): number | null {
   return session.durationMin ? session.openedAt + session.durationMin * 60_000 : null;
 }
 
-export function isSessionExpired(session: CheckInSession, now = Date.now()): boolean {
+export function isSessionExpired(session: CheckInSession, now = serverNow()): boolean {
   const end = sessionEndsAt(session);
   return end !== null && now >= end;
 }

@@ -4,6 +4,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { removeMember, subscribeClub, subscribeMembers } from '../data/clubs';
 import { isSessionExpired, subscribeActiveSession } from '../data/sessions';
+import { serverNow } from '../data/serverClock';
+import { useSessionHousekeeping } from '../hooks/useSessionHousekeeping';
 import { exportClubReport } from '../data/reportExport';
 import { Club, CheckInSession, ClubMember } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
@@ -19,18 +21,27 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [memberError, setMemberError] = useState<string | null>(null);
   const [rawActiveSession, setActiveSession] = useState<CheckInSession | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(serverNow());
+  const [sessionLoaded, setSessionLoaded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => subscribeClub(clubId, setClub), [clubId]);
-  useEffect(() => subscribeActiveSession(clubId, setActiveSession), [clubId]);
+  useEffect(
+    () =>
+      subscribeActiveSession(clubId, (s) => {
+        setActiveSession(s);
+        setSessionLoaded(true);
+      }),
+    [clubId]
+  );
   useEffect(() => subscribeMembers(clubId, setMembers), [clubId]);
   useEffect(() => {
     if (!rawActiveSession?.durationMin) return;
-    const t = setInterval(() => setNow(Date.now()), 15_000);
+    const t = setInterval(() => setNow(serverNow()), 15_000);
     return () => clearInterval(t);
   }, [rawActiveSession?.id, rawActiveSession?.durationMin]);
+  useSessionHousekeeping(clubId, rawActiveSession, sessionLoaded, role === 'owner', now);
   // Members must not see an expired-but-unclosed session as live; the owner
   // still sees it so they can open it and close it.
   const activeSession =

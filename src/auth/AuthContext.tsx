@@ -10,6 +10,8 @@ import {
 import { doc, onSnapshot, setDoc } from '@firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { syncStudentIdToClubs } from '../data/clubs';
+import { syncServerClock } from '../data/serverClock';
+import { stopAdvertising } from '../ble/advertiser';
 
 type AuthContextValue = {
   user: User | null;
@@ -53,6 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, [user?.uid]);
 
+  useEffect(() => {
+    if (user) void syncServerClock(user.uid);
+  }, [user?.uid]);
+
   const value: AuthContextValue = {
     user,
     initializing,
@@ -75,7 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         studentId: studentId?.trim() || null,
       });
     },
-    signOut: () => firebaseSignOut(auth),
+    signOut: () => {
+      stopAdvertising();
+      return firebaseSignOut(auth);
+    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
