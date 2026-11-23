@@ -1,0 +1,90 @@
+name: Build iOS IPA (unsigned)
+
+# Builds an UNSIGNED .ipa on a GitHub macOS runner (free for public repos).
+# The file is then signed on your own PC with Sideloadly using a free Apple
+# ID — see HUONG_DAN_IOS.md.
+# The manual "Run workflow" button only appears once this file is on the
+# default branch. Until then it also runs on every push to ios-ble.
+# TODO: remove the push trigger after merging to the default branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios-ble]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # package-lock.json is git-ignored in this repo, so `npm ci` can't be used.
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          node -v
+          pod --version
+
+      # react-native-ble-lite@1.1.0's iOS Swift file does not compile
+      # (module class conforms to CoreBluetooth delegates without being an
+      # NSObject). Replace it with the fixed copy kept in patches/.
+      - name: Patch react-native-ble-lite iOS module
+        run: |
+          test -f node_modules/react-native-ble-lite/ios/ReactNativeBleLiteModule.swift
+          cp patches/react-native-ble-lite/ReactNativeBleLiteModule.swift \
+             node_modules/react-native-ble-lite/ios/ReactNativeBleLiteModule.swift
+
+      # Generates the native ios/ project from app.json (and runs `pod install`).
+      - name: Expo prebuild (iOS)
+        run: npx expo prebuild --platform ios
+
+      - name: Build Release .app without code signing
+        shell: bash   # `bash` here means -eo pipefail, so xcodebuild failures are not hidden by `tee`
+        run: |
+          cd ios
+          WORKSPACE=$(ls -d *.xcworkspace | head -n 1)
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          echo "Workspace: $WORKSPACE  Scheme: $SCHEME"
+          xcodebuild build             -workspace "$WORKSPACE"             -scheme "$SCHEME"             -configuration Release             -sdk iphoneos             -destination 'generic/platform=iOS'             -derivedDataPath build             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             CODE_SIGN_IDENTITY=""             2>&1 | tee ../xcodebuild.log | tail -n 40
+
+      - name: Show build errors
+        if: failure()
+        run: |
+          echo "===== error lines from xcodebuild.log ====="
+          grep -n -E "error:|\*\* BUILD FAILED|Command .* failed" xcodebuild.log | head -n 60 || true
+
+      - name: Package .ipa
+        run: |
+          APP=$(ls -d ios/build/Build/Products/Release-iphoneos/*.app | head -n 1)
+          echo "App bundle: $APP"
+          ls "$APP" | head -n 20
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry diem-danh-gan-unsigned.ipa Payload
+          ls -lh diem-danh-gan-unsigned.ipa
+          SIZE=$(stat -f%z diem-danh-gan-unsigned.ipa)
+          if [ "$SIZE" -lt 5000000 ]; then
+            echo "IPA is only $SIZE bytes - the build produced an empty app."
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diem-danh-gan-unsigned-ipa
+          path: diem-danh-gan-unsigned.ipa
+          retention-days: 14

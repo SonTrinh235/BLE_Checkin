@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as BLE from 'react-native-ble-lite';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../auth/AuthContext';
-import { CHECKIN_SERVICE_UUID } from '../ble/constants';
+import { sessionServiceUuid } from '../ble/constants';
 import { requestBlePermissions } from '../ble/permissions';
 import { isSessionExpired, subscribeActiveSession, subscribeCheckins } from '../data/sessions';
 import { checkIn } from '../data/checkin';
@@ -114,8 +114,9 @@ export default function CheckInScreen({ route, navigation }: Props) {
       return;
     }
 
+    const sessionUuid = sessionServiceUuid(session.bleCode);
     const subscription = BLE.addAdvertisementListener((event) => {
-      if (event.uuid !== CHECKIN_SERVICE_UUID || event.data !== session.bleCode) return;
+      if (event.uuid.toLowerCase() !== sessionUuid) return;
       subscription.remove();
       stopBleScan();
       void doCheckIn('ble');
@@ -123,7 +124,7 @@ export default function CheckInScreen({ route, navigation }: Props) {
 
     try {
       await BLE.startScanning({
-        serviceUuid: CHECKIN_SERVICE_UUID,
+        serviceUuid: sessionUuid,
         scanMode: BLE.ScanMode.LOW_LATENCY,
         allowDuplicates: true,
       });
