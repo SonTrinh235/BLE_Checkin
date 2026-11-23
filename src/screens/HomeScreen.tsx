@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -11,8 +11,9 @@ import { serverNow } from '../data/serverClock';
 import { useSessionHousekeeping } from '../hooks/useSessionHousekeeping';
 import { CheckInSession, MyClub } from '../types/models';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
-import { Badge, Button, Card, EmptyState, Loading, PageTitle, Screen, StatusCard } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { Badge, Button, Card, EmptyState, ListSkeleton, PageTitle, Screen, StatusCard, TextField } from '../components/ui';
+import { spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Home'>,
@@ -20,8 +21,11 @@ type Props = CompositeScreenProps<
 >;
 
 export default function HomeScreen({ navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user } = useAuth();
   const [clubs, setClubs] = useState<MyClub[] | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -29,6 +33,8 @@ export default function HomeScreen({ navigation }: Props) {
   }, [user]);
 
   const name = user?.displayName ?? user?.email ?? 'bạn';
+  const q = query.trim().toLowerCase();
+  const shown = (clubs ?? []).filter((c) => !q || c.name.toLowerCase().includes(q));
 
   return (
     <Screen edges={['top']} contentStyle={styles.content}>
@@ -39,21 +45,35 @@ export default function HomeScreen({ navigation }: Props) {
         onPress={() => navigation.navigate('CreateJoinClub')}
       />
 
+      {clubs !== null && clubs.length >= 3 ? (
+        <TextField
+          label="Tìm CLB"
+          placeholder="Nhập tên CLB"
+          autoCorrect={false}
+          value={query}
+          onChangeText={setQuery}
+        />
+      ) : null}
+
       {clubs === null ? (
-        <Loading />
+        <ListSkeleton />
       ) : (
         <FlatList
-          data={clubs}
+          data={shown}
           keyExtractor={(item) => item.clubId}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={clubs.length ? <Text style={styles.heading}>CLB của tôi</Text> : null}
+          ListHeaderComponent={shown.length ? <Text style={styles.heading}>CLB của tôi</Text> : null}
           ListEmptyComponent={
-            <EmptyState
-              icon="users"
-              title="Chưa có CLB nào"
-              subtitle="Tạo CLB mới hoặc nhập mã tham gia từ chủ nhiệm."
-            />
+            q ? (
+              <EmptyState icon="users" title="Không tìm thấy CLB" subtitle="Thử một phần khác của tên CLB." />
+            ) : (
+              <EmptyState
+                icon="users"
+                title="Chưa có CLB nào"
+                subtitle="Tạo CLB mới hoặc nhập mã tham gia từ chủ nhiệm."
+              />
+            )
           }
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(280)}>
@@ -91,6 +111,8 @@ function ClubCard({
   onCheckIn: () => void;
   onManage: () => void;
 }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [rawSession, setSession] = useState<CheckInSession | null>(null);
   const [now, setNow] = useState(serverNow());
   const [loaded, setLoaded] = useState(false);
@@ -143,7 +165,8 @@ function ClubCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   live: { gap: spacing.sm, marginTop: spacing.sm },
   content: { flex: 1, gap: spacing.lg },
   list: { gap: spacing.md, paddingBottom: spacing.xl },

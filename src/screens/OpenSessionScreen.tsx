@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import QRCode from 'react-native-qrcode-svg';
@@ -29,7 +29,8 @@ import {
   StatusCard,
   TextField,
 } from '../components/ui';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 import Icon from '../components/Icon';
 import { formatElapsed, formatTime, methodLabel, methodTone } from '../ui/labels';
 
@@ -47,6 +48,8 @@ const DURATION_OPTIONS: { label: string; value: number | null }[] = [
 type BleState = 'starting' | 'advertising' | 'denied' | 'error';
 
 export default function OpenSessionScreen({ route, navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName } = route.params;
   const { user } = useAuth();
   const [session, setSession] = useState<CheckInSession | null>(null);
@@ -351,7 +354,7 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
       {showQr ? (
         <Card style={styles.qrCard}>
           <View style={styles.qrFrame}>
-            <QRCode value={qrValue} size={200} color={colors.primary} />
+            <QRCode value={qrValue} size={200} color={colors.link} />
           </View>
           <Text style={styles.qrHint}>Mã QR dự phòng cho máy không hỗ trợ Bluetooth</Text>
         </Card>
@@ -393,7 +396,8 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   content: { gap: spacing.md },
   backdrop: { flex: 1, backgroundColor: 'rgba(23, 23, 23, 0.45)', justifyContent: 'flex-end' },
   sheet: {
@@ -416,7 +420,7 @@ const styles = StyleSheet.create({
   sheetSession: { ...typography.section, color: colors.text },
   sheetMeta: { ...typography.small, color: colors.muted },
   sheetNote: { ...typography.small, color: colors.muted },
-  sessionTitle: { ...typography.title, color: colors.primary },
+  sessionTitle: { ...typography.title, color: colors.link },
   sessionMeta: { ...typography.small, color: colors.muted, marginTop: -spacing.sm },
   summary: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.xl, gap: 4 },
   summaryEyebrow: { ...typography.caption, color: '#BFDBFE', fontWeight: '700', letterSpacing: 0.8 },

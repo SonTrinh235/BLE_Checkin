@@ -3,7 +3,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/auth/AuthContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import OfflineBanner from './src/components/OfflineBanner';
+import { ThemeProvider, useTheme } from './src/theme/useTheme';
 import { flushPendingCheckIns, startOfflineQueueSync } from './src/data/offlineQueue';
+
+function ThemedStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
 
 export default function App() {
   useEffect(() => {
@@ -13,10 +20,13 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
+      <ThemeProvider>
+        <ThemedStatusBar />
+        <AuthProvider>
+          <RootNavigator />
+          <OfflineBanner />
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

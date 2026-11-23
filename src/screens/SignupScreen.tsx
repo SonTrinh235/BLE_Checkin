@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, TextInput } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { RootStackParamList } from '../navigation/types';
@@ -11,6 +11,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
 
 export default function SignupScreen({ navigation }: Props) {
   const { signUp } = useAuth();
+  const studentIdRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
   const [displayName, setDisplayName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
@@ -55,28 +58,43 @@ export default function SignupScreen({ navigation }: Props) {
 
       {error ? <StatusCard tone="error" icon="alert" title="Chưa tạo được tài khoản" subtitle={error} /> : null}
 
-      <TextField label="Họ tên" placeholder="Nguyễn Minh Anh" value={displayName} onChangeText={setDisplayName} />
       <TextField
+        label="Họ tên"
+        placeholder="Nguyễn Minh Anh"
+        returnKeyType="next"
+        onSubmitEditing={() => studentIdRef.current?.focus()}
+        value={displayName}
+        onChangeText={setDisplayName}
+      />
+      <TextField
+        ref={studentIdRef}
         label="Mã sinh viên (không bắt buộc)"
         placeholder="SV221045"
         autoCapitalize="characters"
         autoCorrect={false}
+        returnKeyType="next"
+        onSubmitEditing={() => emailRef.current?.focus()}
         value={studentId}
         onChangeText={setStudentId}
       />
       <TextField
+        ref={emailRef}
         label="Email"
         placeholder="ten@truong.edu.vn"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="email-address"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
         value={email}
         onChangeText={setEmail}
       />
       <TextField
+        ref={passwordRef}
         label="Mật khẩu"
         placeholder="Tối thiểu 6 ký tự"
         secureTextEntry
+        returnKeyType="go"
         value={password}
         onChangeText={setPassword}
         onSubmitEditing={onSubmit}

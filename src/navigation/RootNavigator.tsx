@@ -1,4 +1,5 @@
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { useEffect, useMemo, useState } from 'react';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,22 +21,13 @@ import CheckInScreen from '../screens/CheckInScreen';
 import BleLabTestScreen from '../screens/BleLabTestScreen';
 import Icon, { IconName } from '../components/Icon';
 import { Loading } from '../components/ui';
-import { colors, typography } from '../theme';
+import { typography } from '../theme';
+import { useColors, useTheme } from '../theme/useTheme';
+import OnboardingScreen from '../screens/OnboardingScreen';
+import { isOnboardingDone, markOnboardingDone } from '../data/onboarding';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-const navTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.primary,
-    background: colors.background,
-    card: colors.surface,
-    text: colors.text,
-    border: colors.border,
-  },
-};
 
 const tabs: { name: keyof MainTabParamList; title: string; icon: IconName; component: React.ComponentType<any> }[] = [
   { name: 'Home', title: 'Trang chủ', icon: 'bluetooth', component: HomeScreen },
@@ -44,12 +36,13 @@ const tabs: { name: keyof MainTabParamList; title: string; icon: IconName; compo
 ];
 
 function MainTabs() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.link,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: { ...typography.caption, fontWeight: '600' },
         tabBarStyle: {
@@ -78,8 +71,29 @@ function MainTabs() {
 
 export default function RootNavigator() {
   const { user, initializing } = useAuth();
+  const { colors, isDark } = useTheme();
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
-  if (initializing) return <Loading />;
+  useEffect(() => {
+    isOnboardingDone().then(setOnboarded);
+  }, []);
+
+  const navTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.link,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.text,
+        border: colors.border,
+      },
+    };
+  }, [colors, isDark]);
+
+  if (initializing || onboarded === null) return <Loading />;
 
   return (
     <NavigationContainer theme={navTheme}>
@@ -102,6 +116,18 @@ export default function RootNavigator() {
           </>
         ) : (
           <>
+            {!onboarded ? (
+              <Stack.Screen name="Onboarding">
+                {() => (
+                  <OnboardingScreen
+                    onDone={() => {
+                      void markOnboardingDone();
+                      setOnboarded(true);
+                    }}
+                  />
+                )}
+              </Stack.Screen>
+            ) : null}
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />

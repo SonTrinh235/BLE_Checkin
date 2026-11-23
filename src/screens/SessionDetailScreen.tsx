@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { isSessionExpired, subscribeCheckins, subscribeSessions } from '../data/sessions';
@@ -17,12 +17,15 @@ import {
   SectionTitle,
   StatusCard,
 } from '../components/ui';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 import { formatDateTime, formatTime, methodLabel, methodTone } from '../ui/labels';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SessionDetail'>;
 
 export default function SessionDetailScreen({ route, navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName, sessionId } = route.params;
   const [session, setSession] = useState<CheckInSession | null | undefined>(undefined);
   const [checkins, setCheckins] = useState<CheckInRecord[]>([]);
@@ -133,10 +136,11 @@ export default function SessionDetailScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   content: { gap: spacing.md },
   club: { ...typography.small, color: colors.muted },
-  title: { ...typography.title, color: colors.primary },
+  title: { ...typography.title, color: colors.link },
   summary: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.xl, gap: 2 },
   summaryTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   count: { fontSize: 40, lineHeight: 46, fontWeight: '800', color: '#FFFFFF' },

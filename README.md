@@ -34,6 +34,10 @@ thời gian thực và xuất báo cáo CSV.
 - Lịch sử điểm danh của từng người; danh sách các phiên và chi tiết từng phiên.
 - Xuất báo cáo CSV theo cả CLB hoặc theo từng phiên.
 - Công cụ **BLE lab test** (tab Cá nhân) để đo cường độ tín hiệu (RSSI) giữa 2 máy.
+- Trải nghiệm: giao diện **sáng / tối** (theo hệ thống hoặc chọn trong tab Cá nhân),
+  màn giới thiệu 3 trang ở lần mở đầu, hiện/ẩn mật khẩu, quên mật khẩu, chia sẻ mã
+  CLB, tìm CLB, lịch sử nhóm theo ngày kèm thống kê, khung xương khi tải dữ liệu,
+  thông báo khi offline.
 
 ## Công nghệ
 

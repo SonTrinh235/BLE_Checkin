@@ -1,4 +1,5 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { useColors } from '../theme/useTheme';
 
 export type IconName =
   | 'bluetooth'
@@ -20,14 +21,15 @@ export type IconName =
 type Props = { name: IconName; size?: number; color?: string };
 
 // Stroke icons drawn on a 24x24 grid (Lucide-style geometry).
-export default function Icon({ name, size = 24, color = '#171717' }: Props) {
+export default function Icon({ name, size = 24, color }: Props) {
+  const palette = useColors();
   return (
     <Svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke={color}
+      stroke={color ?? palette.text}
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
