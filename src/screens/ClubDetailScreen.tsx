@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { removeMember, subscribeClub, subscribeMembers } from '../data/clubs';
@@ -9,7 +10,9 @@ import { useSessionHousekeeping } from '../hooks/useSessionHousekeeping';
 import { exportClubReport } from '../data/reportExport';
 import { Club, CheckInSession, ClubMember } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
-import { Avatar, Badge, Button, Card, Header, Screen, SectionTitle, StatusCard } from '../components/ui';
+import { Avatar, Badge, Button, Card, Header, Reveal, Screen, SectionTitle, StatusCard } from '../components/ui';
+import { useDialog } from '../components/Dialog';
+import { useToast } from '../components/Toast';
 import { radius, spacing, typography, Palette } from '../theme';
 import { useColors } from '../theme/useTheme';
 
@@ -20,6 +23,8 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName, role } = route.params;
   const { user } = useAuth();
+  const dialog = useDialog();
+  const toast = useToast();
   const [club, setClub] = useState<Club | null>(null);
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [memberError, setMemberError] = useState<string | null>(null);
@@ -56,29 +61,32 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
     setMemberError(null);
     try {
       await removeMember(clubId, uid);
+      toast.show(leaving ? `Đã rời ${clubName}` : 'Đã xoá thành viên');
       if (leaving) navigation.popTo('Main', { screen: 'Home' });
     } catch {
       setMemberError(leaving ? 'Chưa rời được CLB. Kiểm tra kết nối và thử lại.' : 'Chưa xoá được thành viên. Kiểm tra kết nối và thử lại.');
     }
   };
 
-  const onRemove = (m: ClubMember) => {
-    Alert.alert('Xoá thành viên?', `${m.displayName} sẽ rời khỏi CLB và cần mã tham gia để vào lại.`, [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Xoá', style: 'destructive', onPress: () => void doRemove(m.uid, false) },
-    ]);
+  const onRemove = async (m: ClubMember) => {
+    const ok = await dialog.confirm({
+      title: 'Xoá thành viên?',
+      message: `${m.displayName} sẽ rời khỏi CLB và cần mã tham gia để vào lại.`,
+      confirmLabel: 'Xoá',
+      destructive: true,
+    });
+    if (ok) await doRemove(m.uid, false);
   };
 
-  const onLeave = () => {
+  const onLeave = async () => {
     if (!user) return;
-    Alert.alert('Rời CLB?', `Bạn sẽ rời khỏi ${clubName} và cần mã tham gia để vào lại.`, [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Rời CLB', style: 'destructive', onPress: () => void doLeave() },
-    ]);
-  };
-
-  const doLeave = async () => {
-    if (user) await doRemove(user.uid, true);
+    const ok = await dialog.confirm({
+      title: 'Rời CLB?',
+      message: `Bạn sẽ rời khỏi ${clubName} và cần mã tham gia để vào lại.`,
+      confirmLabel: 'Rời CLB',
+      destructive: true,
+    });
+    if (ok) await doRemove(user.uid, true);
   };
 
   const onExport = async () => {
@@ -149,6 +157,7 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
       )}
 
       {isOwner && club ? (
+        <Reveal index={1}>
         <Card>
           <SectionTitle>Mã tham gia</SectionTitle>
           <View style={styles.codeBox}>
@@ -170,9 +179,11 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
             />
           </View>
         </Card>
+        </Reveal>
       ) : null}
 
       {isOwner ? (
+        <Reveal index={2}>
         <Card>
           <SectionTitle>Các phiên điểm danh</SectionTitle>
           <Text style={styles.hint}>Xem lại từng phiên và danh sách người đã có mặt.</Text>
@@ -185,14 +196,22 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
             />
           </View>
         </Card>
+        </Reveal>
       ) : null}
 
       {isOwner ? (
+        <Reveal index={3}>
         <Card>
           <SectionTitle>{`Thành viên (${members.length})`}</SectionTitle>
           {memberError ? <StatusCard tone="error" icon="alert" title="Có lỗi" subtitle={memberError} /> : null}
           {members.map((m) => (
-            <View key={m.uid} style={styles.memberRow}>
+            <Animated.View
+              key={m.uid}
+              layout={LinearTransition}
+              entering={FadeIn}
+              exiting={FadeOut.duration(180)}
+              style={styles.memberRow}
+            >
               <Avatar name={m.displayName} size={36} />
               <View style={styles.memberInfo}>
                 <Text style={styles.memberName}>{m.displayName}</Text>
@@ -210,12 +229,14 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
                   <Text style={styles.removeText}>Xoá</Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </Animated.View>
           ))}
         </Card>
+        </Reveal>
       ) : null}
 
       {isOwner ? (
+        <Reveal index={4}>
         <Card>
           <SectionTitle>Báo cáo</SectionTitle>
           <Text style={styles.hint}>Xuất danh sách điểm danh theo phiên và thành viên (CSV).</Text>
@@ -232,6 +253,7 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
             />
           </View>
         </Card>
+        </Reveal>
       ) : null}
       {!isOwner ? (
         <>

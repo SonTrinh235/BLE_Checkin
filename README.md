@@ -37,7 +37,8 @@ thời gian thực và xuất báo cáo CSV.
 - Trải nghiệm: giao diện **sáng / tối** (theo hệ thống hoặc chọn trong tab Cá nhân),
   màn giới thiệu 3 trang ở lần mở đầu, hiện/ẩn mật khẩu, quên mật khẩu, chia sẻ mã
   CLB, tìm CLB, lịch sử nhóm theo ngày kèm thống kê, khung xương khi tải dữ liệu,
-  thông báo khi offline.
+  thông báo khi offline, hộp thoại xác nhận và toast riêng của app (thay cho Alert hệ
+  thống), chuyển trang/tab mượt, rung nhẹ khi chuyển tab và khi có người mới điểm danh.
 
 ## Công nghệ
 

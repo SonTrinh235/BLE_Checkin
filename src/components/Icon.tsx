@@ -7,6 +7,7 @@ export type IconName =
   | 'user'
   | 'calendar'
   | 'back'
+  | 'close'
   | 'check'
   | 'alert'
   | 'qr'
@@ -73,6 +74,8 @@ function render(name: IconName) {
           <Path d="M16 2v4M8 2v4M3 10h18" />
         </>
       );
+    case 'close':
+      return <Path d="M18 6 6 18M6 6l12 12" />;
     case 'back':
       return <Path d="m12 19-7-7 7-7M19 12H5" />;
     case 'check':
