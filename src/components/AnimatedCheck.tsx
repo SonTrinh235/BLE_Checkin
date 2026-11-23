@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { colors } from '../theme';
+import { useColors } from '../theme/useTheme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -29,11 +29,13 @@ const TICK_MS = 380;
 // Reanimated jumps straight to the finished mark.
 export default function AnimatedCheck({
   size = 96,
-  color = colors.success,
+  color,
 }: {
   size?: number;
   color?: string;
 }) {
+  const colors = useColors();
+  const stroke = color ?? colors.success;
   const wash = useSharedValue(0);
   const ring = useSharedValue(0);
   const tick = useSharedValue(0);
@@ -75,7 +77,7 @@ export default function AnimatedCheck({
           cx={48}
           cy={48}
           r={RADIUS}
-          stroke={color}
+          stroke={stroke}
           strokeWidth={4}
           strokeLinecap="round"
           strokeDasharray={[CIRCUMFERENCE, CIRCUMFERENCE]}
@@ -85,7 +87,7 @@ export default function AnimatedCheck({
         />
         <AnimatedPath
           d={TICK_PATH}
-          stroke={color}
+          stroke={stroke}
           strokeWidth={5}
           strokeLinecap="round"
           strokeLinejoin="round"

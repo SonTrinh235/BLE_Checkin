@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
@@ -20,6 +21,8 @@ type AuthContextValue = {
   studentId: string | null;
   updateStudentId: (studentId: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Sends a Firebase password-reset email (succeeds silently for unknown addresses). */
+  resetPassword: (email: string) => Promise<void>;
   signUp: (
     email: string,
     password: string,
@@ -68,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const value = id.trim() || null;
       await setDoc(doc(db, 'users', user.uid), { studentId: value }, { merge: true });
       await syncStudentIdToClubs(user.uid, value);
+    },
+    resetPassword: async (email) => {
+      await sendPasswordResetEmail(auth, email);
     },
     signIn: async (email, password) => {
       await signInWithEmailAndPassword(auth, email, password);

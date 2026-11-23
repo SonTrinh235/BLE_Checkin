@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,13 +9,16 @@ import { checkIn } from '../data/checkin';
 import { isSessionExpired, subscribeActiveSession, subscribeCheckins } from '../data/sessions';
 import { CheckInSession, MyClub } from '../types/models';
 import { Badge, Button, Card } from './ui';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 
 // Dev-only helper (rendered under `__DEV__` in the Profile tab). Emulators
 // have no Bluetooth and no usable camera, so this runs the REAL check-in
 // path — offline queue, Firestore writes, history — without a BLE/QR read.
 // Recorded as a Bluetooth check-in so reports look like the real thing.
 export default function DevSimulateCheckIn() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user } = useAuth();
   const [clubs, setClubs] = useState<MyClub[] | null>(null);
 
@@ -44,6 +47,8 @@ export default function DevSimulateCheckIn() {
 }
 
 function ClubRow({ club }: { club: MyClub }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, studentId } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [session, setSession] = useState<CheckInSession | null>(null);
@@ -108,7 +113,8 @@ function ClubRow({ club }: { club: MyClub }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...typography.section, color: colors.text },
   body: { ...typography.small, color: colors.muted },

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as BLE from 'react-native-ble-lite';
@@ -11,7 +11,8 @@ import { checkIn } from '../data/checkin';
 import { CheckInRecord, CheckInSession } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
 import { Button, Card, Header, HeroState, Loading, Screen, StatusCard } from '../components/ui';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 import { formatDateTime, methodLabel } from '../ui/labels';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CheckIn'>;
@@ -31,6 +32,8 @@ type Phase =
 const BLE_SCAN_TIMEOUT_MS = 20_000;
 
 export default function CheckInScreen({ route, navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName } = route.params;
   const { user, studentId } = useAuth();
   const [myRecord, setMyRecord] = useState<CheckInRecord | null>(null);
@@ -413,6 +416,8 @@ export default function CheckInScreen({ route, navigation }: Props) {
 }
 
 function ReceiptRow({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.receiptRow}>
       <Text style={styles.receiptLabel}>{label}</Text>
@@ -421,7 +426,8 @@ function ReceiptRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   receipt: { gap: spacing.md },
   receiptRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.lg },
   receiptLabel: { ...typography.small, color: colors.muted },

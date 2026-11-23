@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
+import { Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { removeMember, subscribeClub, subscribeMembers } from '../data/clubs';
@@ -10,11 +10,14 @@ import { exportClubReport } from '../data/reportExport';
 import { Club, CheckInSession, ClubMember } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
 import { Avatar, Badge, Button, Card, Header, Screen, SectionTitle, StatusCard } from '../components/ui';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ClubDetail'>;
 
 export default function ClubDetailScreen({ route, navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName, role } = route.params;
   const { user } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
@@ -154,6 +157,18 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
             </Text>
           </View>
           <Text style={styles.hint}>Chia sẻ mã này để thành viên tham gia CLB.</Text>
+          <View style={{ marginTop: spacing.sm }}>
+            <Button
+              title="Chia sẻ mã"
+              icon="users"
+              variant="secondary"
+              onPress={() =>
+                void Share.share({
+                  message: `Mã tham gia CLB ${clubName} trên Điểm danh gần: ${club.joinCode}`,
+                }).catch(() => undefined)
+              }
+            />
+          </View>
         </Card>
       ) : null}
 
@@ -228,7 +243,8 @@ export default function ClubDetailScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   content: { gap: spacing.lg },
   codeBox: {
     backgroundColor: colors.accentLight,
@@ -237,7 +253,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: spacing.sm,
   },
-  code: { ...typography.display, color: colors.primary, letterSpacing: 4 },
+  code: { ...typography.display, color: colors.link, letterSpacing: 4 },
   hint: { ...typography.small, color: colors.muted },
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
   memberInfo: { flex: 1 },

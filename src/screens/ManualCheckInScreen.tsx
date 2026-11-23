@@ -12,18 +12,21 @@ import {
   Card,
   EmptyState,
   Header,
-  Loading,
+  ListSkeleton,
   Screen,
   StatusCard,
   TextField,
 } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ManualCheckIn'>;
 
 // Organizer marks a member present by hand — for dead phones, denied
 // permissions, or anyone BLE/QR couldn't reach.
 export default function ManualCheckInScreen({ route, navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName, sessionId, sessionTitle } = route.params;
   const [members, setMembers] = useState<ClubMember[] | null>(null);
   const [checkins, setCheckins] = useState<CheckInRecord[]>([]);
@@ -71,7 +74,7 @@ export default function ManualCheckInScreen({ route, navigation }: Props) {
       {error ? <StatusCard tone="error" icon="alert" title="Chưa ghi nhận" subtitle={error} /> : null}
 
       {members === null ? (
-        <Loading />
+        <ListSkeleton />
       ) : shown.length === 0 ? (
         <EmptyState
           icon="users"
@@ -111,9 +114,10 @@ export default function ManualCheckInScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   content: { gap: spacing.md },
-  sessionTitle: { ...typography.section, color: colors.primary },
+  sessionTitle: { ...typography.section, color: colors.link },
   card: { padding: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   info: { flex: 1 },

@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { isSessionExpired, subscribeCheckins, subscribeSessions } from '../data/sessions';
 import { CheckInSession } from '../types/models';
 import { RootStackParamList } from '../navigation/types';
-import { Badge, Card, EmptyState, Header, Loading, Screen } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { Badge, Card, EmptyState, Header, ListSkeleton, Screen } from '../components/ui';
+import { spacing, typography, Palette } from '../theme';
+import { useColors } from '../theme/useTheme';
 import { formatDateTime } from '../ui/labels';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Sessions'>;
 
 export default function SessionsScreen({ route, navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName } = route.params;
   const [sessions, setSessions] = useState<CheckInSession[] | null>(null);
 
@@ -24,7 +27,7 @@ export default function SessionsScreen({ route, navigation }: Props) {
     >
       <Text style={styles.club}>{clubName}</Text>
       {sessions === null ? (
-        <Loading />
+        <ListSkeleton />
       ) : sessions.length === 0 ? (
         <EmptyState
           icon="calendar"
@@ -47,6 +50,8 @@ export default function SessionsScreen({ route, navigation }: Props) {
 }
 
 function SessionRow({ session, onPress }: { session: CheckInSession; onPress: () => void }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [count, setCount] = useState<number | null>(null);
   useEffect(
     () => subscribeCheckins(session.clubId, session.id, (r) => setCount(r.length)),
@@ -71,9 +76,10 @@ function SessionRow({ session, onPress }: { session: CheckInSession; onPress: ()
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   content: { gap: spacing.md },
-  club: { ...typography.section, color: colors.primary },
+  club: { ...typography.section, color: colors.link },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   title: { ...typography.section, color: colors.text, flex: 1 },
   meta: { ...typography.small, color: colors.muted },

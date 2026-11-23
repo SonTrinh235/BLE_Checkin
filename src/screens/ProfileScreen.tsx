@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
-import { Avatar, Button, Card, Screen, SectionTitle, StatusCard, TextField } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { Avatar, Button, Card, Screen, Segmented, SectionTitle, StatusCard, TextField } from '../components/ui';
+import { spacing, typography, Palette } from '../theme';
+import { useColors, useTheme } from '../theme/useTheme';
 import DevSimulateCheckIn from '../components/DevSimulateCheckIn';
 
 type Props = CompositeScreenProps<
@@ -15,13 +16,23 @@ type Props = CompositeScreenProps<
 >;
 
 export default function ProfileScreen({ navigation }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, signOut, studentId, updateStudentId } = useAuth();
+  const { mode, setMode } = useTheme();
   const name = user?.displayName ?? 'Người dùng';
   const [idDraft, setIdDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<'ok' | 'error' | null>(null);
 
   useEffect(() => setIdDraft(studentId ?? ''), [studentId]);
+
+  const onSignOut = () => {
+    Alert.alert('Đăng xuất?', 'Bạn sẽ cần đăng nhập lại để điểm danh.', [
+      { text: 'Huỷ', style: 'cancel' },
+      { text: 'Đăng xuất', style: 'destructive', onPress: () => void signOut() },
+    ]);
+  };
 
   const onSaveId = async () => {
     setSaving(true);
@@ -72,6 +83,20 @@ export default function ProfileScreen({ navigation }: Props) {
         />
       </Card>
 
+      <SectionTitle>Giao diện</SectionTitle>
+      <Card style={{ gap: spacing.md }}>
+        <Segmented
+          options={[
+            { label: 'Hệ thống', value: 'system' },
+            { label: 'Sáng', value: 'light' },
+            { label: 'Tối', value: 'dark' },
+          ]}
+          value={mode}
+          onChange={setMode}
+        />
+        <Text style={styles.toolBody}>"Hệ thống" tự đổi sáng/tối theo cài đặt của điện thoại.</Text>
+      </Card>
+
       <SectionTitle>Công cụ</SectionTitle>
       <Card>
         <Text style={styles.toolTitle}>BLE lab test</Text>
@@ -90,12 +115,13 @@ export default function ProfileScreen({ navigation }: Props) {
 
       {__DEV__ ? <DevSimulateCheckIn /> : null}
 
-      <Button title="Đăng xuất" icon="logout" variant="danger" onPress={() => signOut()} />
+      <Button title="Đăng xuất" icon="logout" variant="danger" onPress={onSignOut} />
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   content: { gap: spacing.lg },
   profile: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
   name: { ...typography.title, color: colors.text },

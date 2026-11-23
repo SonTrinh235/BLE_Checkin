@@ -1,6 +1,7 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, Ref, useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
+  DimensionValue,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,11 +20,13 @@ import Animated, {
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 import AnimatedCheck from './AnimatedCheck';
 import Icon, { IconName } from './Icon';
-import { colors, radius, spacing, Tone, toneColors, typography } from '../theme';
+import { radius, spacing, Tone, typography, toneColorsFor, Palette } from '../theme';
+import { useColors, useTheme } from '../theme/useTheme';
 import { haptics } from '../ui/haptics';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -69,6 +72,8 @@ export function Screen({
   contentStyle,
   keyboard = false,
 }: ScreenProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const body = scroll ? (
     <ScrollView
       style={styles.flex}
@@ -115,6 +120,8 @@ export function Header({
   onBack?: () => void;
   right?: ReactNode;
 }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.header}>
       {onBack ? (
@@ -125,7 +132,7 @@ export function Header({
           accessibilityLabel="Quay lại"
           style={styles.headerBack}
         >
-          <Icon name="back" size={22} color={colors.primary} />
+          <Icon name="back" size={22} color={colors.link} />
         </Pressable>
       ) : null}
       <Text style={styles.headerTitle} numberOfLines={1}>
@@ -137,6 +144,8 @@ export function Header({
 }
 
 export function PageTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.pageTitle}>
       <Text style={styles.display}>{title}</Text>
@@ -146,6 +155,8 @@ export function PageTitle({ title, subtitle }: { title: string; subtitle?: strin
 }
 
 export function SectionTitle({ children }: { children: string }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
@@ -170,12 +181,14 @@ export function Button({
   disabled = false,
   icon,
 }: ButtonProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const inactive = disabled || loading;
   const palette = {
     primary: { bg: colors.primary, fg: '#FFFFFF' },
-    secondary: { bg: colors.accentLight, fg: colors.primary },
+    secondary: { bg: colors.accentLight, fg: colors.link },
     danger: { bg: colors.error, fg: '#FFFFFF' },
-    ghost: { bg: 'transparent', fg: colors.primary },
+    ghost: { bg: 'transparent', fg: colors.link },
   }[variant];
 
   const press = usePressScale(0.97);
@@ -215,18 +228,49 @@ export function Button({
 /* TextField                                                           */
 /* ------------------------------------------------------------------ */
 
-type TextFieldProps = TextInputProps & { label: string; error?: string | null; hint?: string };
+type TextFieldProps = TextInputProps & {
+  label: string;
+  error?: string | null;
+  hint?: string;
+  /** React 19 passes `ref` as a normal prop; forwarded to the TextInput (focus chaining). */
+  ref?: Ref<TextInput>;
+};
 
-export function TextField({ label, error, hint, style, ...rest }: TextFieldProps) {
+export function TextField({ label, error, hint, style, secureTextEntry, ...rest }: TextFieldProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDark } = useTheme();
+  const [hidden, setHidden] = useState(true);
+  const isPassword = !!secureTextEntry;
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={label}
-        style={[styles.input, error ? styles.inputError : null, style]}
-        {...rest}
-      />
+      <View>
+        <TextInput
+          placeholderTextColor={colors.muted}
+          keyboardAppearance={isDark ? 'dark' : 'light'}
+          accessibilityLabel={label}
+          secureTextEntry={isPassword && hidden}
+          style={[
+            styles.input,
+            isPassword ? styles.inputWithToggle : null,
+            error ? styles.inputError : null,
+            style,
+          ]}
+          {...rest}
+        />
+        {isPassword ? (
+          <Pressable
+            onPress={() => setHidden((h) => !h)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu'}
+            style={styles.inputToggle}
+          >
+            <Text style={styles.inputToggleText}>{hidden ? 'Hiện' : 'Ẩn'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {error ? (
         <Text style={[styles.fieldHint, { color: colors.error }]}>{error}</Text>
       ) : hint ? (
@@ -249,6 +293,8 @@ export function Card({
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const press = usePressScale(0.985);
   if (onPress) {
     return (
@@ -267,7 +313,9 @@ export function Card({
 }
 
 export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
-  const t = toneColors[tone];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const t = toneColorsFor(colors)[tone];
   return (
     <View style={[styles.badge, { backgroundColor: t.bg }]}>
       <Text style={[styles.badgeText, { color: t.fg }]}>{label}</Text>
@@ -289,7 +337,9 @@ export function StatusCard({
   icon?: IconName;
   busy?: boolean;
 }) {
-  const t = toneColors[tone];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const t = toneColorsFor(colors)[tone];
   return (
     <Animated.View
       entering={FadeIn.duration(220)}
@@ -328,7 +378,9 @@ export function HeroState({
   busy?: boolean;
   children?: ReactNode;
 }) {
-  const t = toneColors[tone];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const t = toneColorsFor(colors)[tone];
   // Success + check gets the pen-stroke animation instead of the static icon.
   const drawnCheck = !busy && tone === 'success' && icon === 'check';
 
@@ -372,6 +424,8 @@ export function EmptyState({
   title: string;
   subtitle?: string;
 }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.empty}>
       <Icon name={icon} size={28} color={colors.muted} />
@@ -382,6 +436,7 @@ export function EmptyState({
 }
 
 export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
+  const colors = useColors();
   const initials = name
     .trim()
     .split(/\s+/)
@@ -399,7 +454,7 @@ export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: colors.primary, fontWeight: '700', fontSize: size * 0.36 }}>
+      <Text style={{ color: colors.link, fontWeight: '700', fontSize: size * 0.36 }}>
         {initials || '?'}
       </Text>
     </View>
@@ -407,14 +462,97 @@ export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
 }
 
 export function Loading() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={[styles.flex, { alignItems: 'center', justifyContent: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.primary} />
+      <ActivityIndicator size="large" color={colors.link} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+/* ------------------------------------------------------------------ */
+/* Skeleton loading + segmented control                                */
+/* ------------------------------------------------------------------ */
+
+/** Pulsing placeholder block shown while data loads. */
+export function Skeleton({
+  height = 14,
+  width = '100%',
+  style,
+}: {
+  height?: number;
+  width?: DimensionValue;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  const opacity = useSharedValue(0.45);
+  useEffect(() => {
+    opacity.value = withRepeat(withTiming(1, { duration: 750 }), -1, true);
+  }, [opacity]);
+  const pulse = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      accessible={false}
+      style={[{ height, width, borderRadius: radius.sm, backgroundColor: colors.border }, pulse, style]}
+    />
+  );
+}
+
+/** Card-shaped skeletons for list screens (replaces a bare spinner). */
+export function ListSkeleton({ count = 3 }: { count?: number }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <View style={styles.skeletonList} accessibilityRole="progressbar" accessibilityLabel="Đang tải">
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={styles.skeletonCard}>
+          <Skeleton height={16} width="55%" />
+          <Skeleton height={12} width="80%" />
+          <Skeleton height={12} width="35%" />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Pill-style single-choice control (e.g. theme: system / light / dark). */
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { label: string; value: T }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <View style={styles.segmented} accessibilityRole="radiogroup">
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => {
+              haptics.light();
+              onChange(o.value);
+            }}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active }}
+            style={[styles.segment, active ? styles.segmentActive : null]}
+          >
+            <Text style={[styles.segmentText, active ? styles.segmentTextActive : null]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: colors.background },
   screenContent: { padding: spacing.lg, gap: spacing.md },
@@ -439,7 +577,7 @@ const styles = StyleSheet.create({
   headerBack: { padding: 2 },
   headerTitle: { ...typography.section, color: colors.text, flex: 1 },
   pageTitle: { gap: spacing.xs, marginBottom: spacing.sm },
-  display: { ...typography.display, color: colors.primary },
+  display: { ...typography.display, color: colors.link },
   subtitle: { ...typography.body, color: colors.muted },
   sectionTitle: { ...typography.section, color: colors.text, marginTop: spacing.sm },
 
@@ -466,9 +604,39 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
   },
+  inputWithToggle: { paddingRight: 64 },
+  inputToggle: {
+    position: 'absolute',
+    right: spacing.md,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  inputToggleText: { ...typography.small, fontWeight: '600', color: colors.link },
   inputError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   fieldHint: { ...typography.caption, color: colors.muted },
 
+  skeletonList: { gap: spacing.md },
+  skeletonCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: 10,
+  },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 4,
+  },
+  segment: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
+  segmentActive: { backgroundColor: colors.primary },
+  segmentText: { ...typography.small, fontWeight: '600', color: colors.muted },
+  segmentTextActive: { color: '#FFFFFF' },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
