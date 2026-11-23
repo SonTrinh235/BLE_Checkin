@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import * as BLE from 'react-native-ble-lite';
+import { useDialog } from '../components/Dialog';
 import { CHECKIN_SERVICE_UUID, randomSessionCode } from '../ble/constants';
 import { requestBlePermissions } from '../ble/permissions';
 
 export default function HostScreen() {
+  const dialog = useDialog();
   const [sessionCode] = useState(randomSessionCode);
   const [isAdvertising, setIsAdvertising] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,10 +24,12 @@ export default function HostScreen() {
     setError(null);
     const granted = await requestBlePermissions();
     if (!granted) {
-      Alert.alert(
-        'Permission required',
-        'Bluetooth permissions are required to open a check-in session.'
-      );
+      void dialog.alert({
+        title: 'Cần quyền Bluetooth',
+        message: 'Hãy cho phép Bluetooth trong Cài đặt để dùng công cụ này.',
+        tone: 'warning',
+        icon: 'lock',
+      });
       return;
     }
 

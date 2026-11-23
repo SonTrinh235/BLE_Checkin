@@ -516,6 +516,33 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
+/** Round "X" pinned to the top-right corner of a dialog/sheet. Place it as the sheet's first child. */
+export function CloseButton({ onPress, disabled = false }: { onPress: () => void; disabled?: boolean }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel="Đóng"
+      style={({ pressed }) => [styles.closeButton, pressed ? styles.closeButtonPressed : null, disabled ? { opacity: 0.4 } : null]}
+    >
+      <Icon name="close" size={18} color={colors.muted} />
+    </Pressable>
+  );
+}
+
+/** Fades a block in with a small upward slide; stagger siblings with `index`. */
+export function Reveal({ children, index = 0 }: { children: ReactNode; index?: number }) {
+  return (
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(300)}>
+      {children}
+    </Animated.View>
+  );
+}
+
 /** Pill-style single-choice control (e.g. theme: system / light / dark). */
 export function Segmented<T extends string>({
   options,
@@ -616,6 +643,19 @@ const createStyles = (colors: Palette) =>
   inputError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   fieldHint: { ...typography.caption, color: colors.muted },
 
+  closeButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    zIndex: 10,
+  },
+  closeButtonPressed: { backgroundColor: colors.border },
   skeletonList: { gap: spacing.md },
   skeletonCard: {
     backgroundColor: colors.surface,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import QRCode from 'react-native-qrcode-svg';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -21,6 +21,7 @@ import {
   Badge,
   Button,
   Card,
+  CloseButton,
   EmptyState,
   Header,
   Loading,
@@ -31,8 +32,10 @@ import {
 } from '../components/ui';
 import { radius, spacing, typography, Palette } from '../theme';
 import { useColors } from '../theme/useTheme';
+import { useDialog } from '../components/Dialog';
 import Icon from '../components/Icon';
 import { formatElapsed, formatTime, methodLabel, methodTone } from '../ui/labels';
+import { haptics } from '../ui/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OpenSession'>;
 
@@ -52,8 +55,11 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { clubId, clubName } = route.params;
   const { user } = useAuth();
+  const dialog = useDialog();
   const [session, setSession] = useState<CheckInSession | null>(null);
   const [checkins, setCheckins] = useState<CheckInRecord[]>([]);
+  const mountedAt = useRef(Date.now());
+  const lastCount = useRef(0);
   const [bleState, setBleState] = useState<BleState>('starting');
   const [retryKey, setRetryKey] = useState(0);
   const [opening, setOpening] = useState(false);
@@ -84,6 +90,12 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
     }
     return subscribeCheckins(clubId, session.id, setCheckins);
   }, [clubId, session?.id]);
+
+  // A light tap whenever someone new checks in live (not for the initial load).
+  useEffect(() => {
+    if (checkins.length > lastCount.current && Date.now() - mountedAt.current > 1500) haptics.light();
+    lastCount.current = checkins.length;
+  }, [checkins.length]);
 
   useEffect(() => {
     if (!session) return;
@@ -141,13 +153,24 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
     try {
       await closeSession(clubId, session.id);
       setConfirmClose(false);
-      if (auto) Alert.alert('Phiên đã hết giờ', 'Phiên điểm danh đã tự đóng khi hết thời lượng.');
+      if (auto) {
+        void dialog.alert({
+          title: 'Phiên đã hết giờ',
+          message: 'Phiên điểm danh đã tự đóng khi hết thời lượng.',
+          tone: 'warning',
+          icon: 'clock',
+        });
+      }
       navigation.goBack();
     } catch (err) {
       setClosing(false);
       setConfirmClose(false);
       if (auto) autoClosedRef.current = null;
-      Alert.alert('Không đóng được phiên', String((err as Error)?.message ?? err));
+      void dialog.alert({
+        title: 'Không đóng được phiên',
+        message: String((err as Error)?.message ?? err),
+        tone: 'error',
+      });
     }
   };
 
@@ -264,6 +287,7 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
         >
           {/* Inner Pressable swallows taps so touching the sheet doesn't dismiss it. */}
           <Pressable style={styles.sheet} onPress={() => undefined}>
+            <CloseButton onPress={() => setConfirmClose(false)} disabled={closing} />
             <View style={styles.sheetWarn}>
               <Icon name="alert" size={44} color={colors.warning} />
               <Text style={styles.sheetTitle}>Đóng phiên điểm danh?</Text>

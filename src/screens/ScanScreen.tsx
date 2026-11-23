@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import * as BLE from 'react-native-ble-lite';
+import { useDialog } from '../components/Dialog';
 import { CHECKIN_SERVICE_UUID } from '../ble/constants';
 import { requestBlePermissions } from '../ble/permissions';
 
@@ -18,6 +19,7 @@ function average(values: number[]): number {
 }
 
 export default function ScanScreen() {
+  const dialog = useDialog();
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devices, setDevices] = useState<Record<string, DiscoveredDevice>>({});
@@ -35,10 +37,12 @@ export default function ScanScreen() {
     setError(null);
     const granted = await requestBlePermissions();
     if (!granted) {
-      Alert.alert(
-        'Permission required',
-        'Bluetooth permissions are required to scan for a check-in session.'
-      );
+      void dialog.alert({
+        title: 'Cần quyền Bluetooth',
+        message: 'Hãy cho phép Bluetooth trong Cài đặt để dùng công cụ này.',
+        tone: 'warning',
+        icon: 'lock',
+      });
       return;
     }
 

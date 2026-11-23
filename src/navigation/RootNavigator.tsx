@@ -24,6 +24,7 @@ import { Loading } from '../components/ui';
 import { typography } from '../theme';
 import { useColors, useTheme } from '../theme/useTheme';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import { haptics } from '../ui/haptics';
 import { isOnboardingDone, markOnboardingDone } from '../data/onboarding';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,8 +41,10 @@ function MainTabs() {
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
+      screenListeners={{ tabPress: () => haptics.light() }}
       screenOptions={{
         headerShown: false,
+        animation: 'fade',
         tabBarActiveTintColor: colors.link,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: { ...typography.caption, fontWeight: '600' },
@@ -101,7 +104,11 @@ export default function RootNavigator() {
         {user ? (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
-            <Stack.Screen name="CreateJoinClub" component={CreateJoinClubScreen} />
+            <Stack.Screen
+              name="CreateJoinClub"
+              component={CreateJoinClubScreen}
+              options={{ animation: 'slide_from_bottom' }}
+            />
             <Stack.Screen name="ClubDetail" component={ClubDetailScreen} />
             <Stack.Screen name="OpenSession" component={OpenSessionScreen} />
             <Stack.Screen name="CheckIn" component={CheckInScreen} />

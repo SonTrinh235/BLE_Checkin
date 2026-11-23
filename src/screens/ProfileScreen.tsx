@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,6 +8,8 @@ import { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { Avatar, Button, Card, Screen, Segmented, SectionTitle, StatusCard, TextField } from '../components/ui';
 import { spacing, typography, Palette } from '../theme';
 import { useColors, useTheme } from '../theme/useTheme';
+import { useDialog } from '../components/Dialog';
+import { useToast } from '../components/Toast';
 import DevSimulateCheckIn from '../components/DevSimulateCheckIn';
 
 type Props = CompositeScreenProps<
@@ -20,6 +22,8 @@ export default function ProfileScreen({ navigation }: Props) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, signOut, studentId, updateStudentId } = useAuth();
   const { mode, setMode } = useTheme();
+  const dialog = useDialog();
+  const toast = useToast();
   const name = user?.displayName ?? 'Người dùng';
   const [idDraft, setIdDraft] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,11 +31,14 @@ export default function ProfileScreen({ navigation }: Props) {
 
   useEffect(() => setIdDraft(studentId ?? ''), [studentId]);
 
-  const onSignOut = () => {
-    Alert.alert('Đăng xuất?', 'Bạn sẽ cần đăng nhập lại để điểm danh.', [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Đăng xuất', style: 'destructive', onPress: () => void signOut() },
-    ]);
+  const onSignOut = async () => {
+    const ok = await dialog.confirm({
+      title: 'Đăng xuất?',
+      message: 'Bạn sẽ cần đăng nhập lại để điểm danh.',
+      confirmLabel: 'Đăng xuất',
+      destructive: true,
+    });
+    if (ok) await signOut();
   };
 
   const onSaveId = async () => {
@@ -39,7 +46,8 @@ export default function ProfileScreen({ navigation }: Props) {
     setSaved(null);
     try {
       await updateStudentId(idDraft);
-      setSaved('ok');
+      setSaved(null);
+      toast.show('Đã lưu mã sinh viên');
     } catch {
       setSaved('error');
     } finally {
@@ -70,7 +78,6 @@ export default function ProfileScreen({ navigation }: Props) {
             setSaved(null);
           }}
         />
-        {saved === 'ok' ? <StatusCard tone="success" icon="check" title="Đã lưu mã sinh viên" /> : null}
         {saved === 'error' ? (
           <StatusCard tone="error" icon="alert" title="Chưa lưu được" subtitle="Kiểm tra kết nối và thử lại." />
         ) : null}
