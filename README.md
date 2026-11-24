@@ -124,7 +124,3 @@ Hosting/Storage/Analytics. Sau khi sửa `firestore.rules` trong repo, phải
   quảng bá 31 byte với UUID 128-bit + dữ liệu. Nhờ đó cả 4 tổ hợp chủ nhiệm /
   thành viên (Android, iPhone) dùng chung một giao thức. Chưa kiểm thử trên máy thật.
 - BLE lab test: máy quét phải nhập mã phiên hiển thị trên máy chủ.
-
-## Nhóm thực hiện
-
-_Điền tên thành viên._
