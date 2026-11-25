@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthContext';
 import { MainTabParamList, RootStackParamList } from './types';
 import WelcomeScreen from '../screens/WelcomeScreen';
@@ -19,12 +18,11 @@ import ClubDetailScreen from '../screens/ClubDetailScreen';
 import OpenSessionScreen from '../screens/OpenSessionScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import BleLabTestScreen from '../screens/BleLabTestScreen';
-import Icon, { IconName } from '../components/Icon';
+import type { IconName } from '../components/Icon';
 import { Loading } from '../components/ui';
-import { typography } from '../theme';
-import { useColors, useTheme } from '../theme/useTheme';
+import BubbleTabBar from '../components/BubbleTabBar';
+import { useTheme } from '../theme/useTheme';
 import OnboardingScreen from '../screens/OnboardingScreen';
-import { haptics } from '../ui/haptics';
 import { isOnboardingDone, markOnboardingDone } from '../data/onboarding';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -37,36 +35,13 @@ const tabs: { name: keyof MainTabParamList; title: string; icon: IconName; compo
 ];
 
 function MainTabs() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
-      screenListeners={{ tabPress: () => haptics.light() }}
-      screenOptions={{
-        headerShown: false,
-        animation: 'fade',
-        tabBarActiveTintColor: colors.link,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { ...typography.caption, fontWeight: '600' },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: 56 + insets.bottom,
-          paddingBottom: insets.bottom + 4,
-          paddingTop: 6,
-        },
-      }}
+      tabBar={(props) => <BubbleTabBar {...props} tabs={tabs} />}
+      screenOptions={{ headerShown: false, animation: 'fade' }}
     >
       {tabs.map((t) => (
-        <Tab.Screen
-          key={t.name}
-          name={t.name}
-          component={t.component}
-          options={{
-            title: t.title,
-            tabBarIcon: ({ color, size }) => <Icon name={t.icon} size={size} color={color} />,
-          }}
-        />
+        <Tab.Screen key={t.name} name={t.name} component={t.component} options={{ title: t.title }} />
       ))}
     </Tab.Navigator>
   );
