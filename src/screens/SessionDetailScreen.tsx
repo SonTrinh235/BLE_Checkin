@@ -10,6 +10,7 @@ import {
   Badge,
   Button,
   Card,
+  CountUp,
   EmptyState,
   Header,
   Loading,
@@ -93,7 +94,7 @@ export default function SessionDetailScreen({ route, navigation }: Props) {
           <Text style={styles.title}>{session.title}</Text>
           <View style={styles.summary}>
             <View style={styles.summaryTop}>
-              <Text style={styles.count}>{checkins.length}</Text>
+              <CountUp value={checkins.length} style={styles.count} />
               <Badge label={open ? 'Đang mở' : 'Đã đóng'} tone={open ? 'success' : 'neutral'} />
             </View>
             <Text style={styles.countLabel}>người đã điểm danh</Text>

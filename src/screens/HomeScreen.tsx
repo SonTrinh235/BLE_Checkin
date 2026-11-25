@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
@@ -11,7 +11,7 @@ import { serverNow } from '../data/serverClock';
 import { useSessionHousekeeping } from '../hooks/useSessionHousekeeping';
 import { CheckInSession, MyClub } from '../types/models';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
-import { Badge, Button, Card, EmptyState, ListSkeleton, PageTitle, Screen, StatusCard, TextField } from '../components/ui';
+import { Badge, Button, Card, EmptyState, ListSkeleton, LiveDot, PageTitle, Screen, StatusCard, TextField } from '../components/ui';
 import { spacing, typography, Palette } from '../theme';
 import { useColors } from '../theme/useTheme';
 
@@ -76,7 +76,7 @@ export default function HomeScreen({ navigation }: Props) {
             )
           }
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(280)}>
+            <Animated.View layout={LinearTransition} entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(280)}>
             <ClubCard
               club={item}
               onPress={() =>
@@ -138,6 +138,7 @@ function ClubCard({
   return (
     <Card onPress={onPress}>
       <View style={styles.row}>
+        {session ? <LiveDot /> : null}
         <Text style={styles.cardTitle} numberOfLines={1}>
           {club.name}
         </Text>

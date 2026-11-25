@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
 import { subscribeMyHistory } from '../data/history';
-import { getPendingCheckInCount } from '../data/offlineQueue';
+import { flushPendingCheckIns, getPendingCheckInCount } from '../data/offlineQueue';
 import { MyCheckInHistoryEntry } from '../types/models';
-import { Badge, Card, EmptyState, ListSkeleton, PageTitle, Screen, StatusCard } from '../components/ui';
+import { Badge, Card, CountUp, EmptyState, ListSkeleton, PageTitle, Screen, StatusCard } from '../components/ui';
 import { radius, spacing, typography, Palette } from '../theme';
 import { useColors } from '../theme/useTheme';
 import { formatTime, methodLabel, methodTone } from '../ui/labels';
@@ -37,6 +37,7 @@ export default function HistoryScreen() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<MyCheckInHistoryEntry[] | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +51,17 @@ export default function HistoryScreen() {
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
   }, [entries]);
+
+  // Pull down to push any check-ins still queued from an offline moment.
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await flushPendingCheckIns();
+      setPendingCount(await getPendingCheckInCount());
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Entries arrive newest-first; insert a day header whenever the date changes.
   const rows = useMemo<Row[]>(() => {
@@ -90,12 +102,12 @@ export default function HistoryScreen() {
       {entries && entries.length > 0 ? (
         <View style={styles.summary} accessibilityRole="summary">
           <View style={styles.stat}>
-            <Text style={styles.statNumber}>{entries.length}</Text>
+            <CountUp value={entries.length} style={styles.statNumber} />
             <Text style={styles.statLabel}>buổi đã tham dự</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statNumber}>{monthCount}</Text>
+            <CountUp value={monthCount} style={styles.statNumber} />
             <Text style={styles.statLabel}>buổi trong tháng này</Text>
           </View>
         </View>
@@ -109,6 +121,15 @@ export default function HistoryScreen() {
           keyExtractor={(row) => row.key}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void onRefresh()}
+              tintColor={colors.link}
+              colors={[colors.link]}
+              progressBackgroundColor={colors.surface}
+            />
+          }
           ListEmptyComponent={
             <EmptyState
               icon="clock"

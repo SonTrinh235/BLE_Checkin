@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon, { IconName } from './Icon';
 import { Button, CloseButton } from './ui';
@@ -140,7 +140,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             </Animated.View>
 
             <Animated.View
-              entering={SlideInDown.springify().damping(20).stiffness(220)}
+              entering={SlideInDown.duration(280).easing(Easing.out(Easing.cubic))}
               exiting={SlideOutDown.duration(EXIT_MS)}
               style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}
               accessibilityViewIsModal

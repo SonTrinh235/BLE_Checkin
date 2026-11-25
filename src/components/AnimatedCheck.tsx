@@ -48,7 +48,7 @@ export default function AnimatedCheck({
     scale.value = withDelay(
       RING_MS + TICK_MS,
       withSequence(
-        withTiming(1.08, { duration: 120, easing: Easing.out(Easing.quad) }),
+        withTiming(1.04, { duration: 140, easing: Easing.out(Easing.quad) }),
         withTiming(1, { duration: 180, easing: Easing.inOut(Easing.quad) })
       )
     );

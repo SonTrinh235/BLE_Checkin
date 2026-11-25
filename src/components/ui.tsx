@@ -1,4 +1,4 @@
-import { ReactNode, Ref, useEffect, useState, useMemo } from 'react';
+import { ReactNode, Ref, useEffect, useRef, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   DimensionValue,
@@ -11,15 +11,19 @@ import {
   Text,
   TextInput,
   TextInputProps,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
 import { Edge, SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInDown,
   useAnimatedStyle,
+  interpolateColor,
   useSharedValue,
+  withDelay,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
@@ -27,7 +31,9 @@ import AnimatedCheck from './AnimatedCheck';
 import Icon, { IconName } from './Icon';
 import { radius, spacing, Tone, typography, toneColorsFor, Palette } from '../theme';
 import { useColors, useTheme } from '../theme/useTheme';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { haptics } from '../ui/haptics';
+import { useSlidingBubble } from '../ui/useSlidingBubble';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -236,27 +242,46 @@ type TextFieldProps = TextInputProps & {
   ref?: Ref<TextInput>;
 };
 
-export function TextField({ label, error, hint, style, secureTextEntry, ...rest }: TextFieldProps) {
+export function TextField({
+  label,
+  error,
+  hint,
+  style,
+  secureTextEntry,
+  onFocus,
+  onBlur,
+  ...rest
+}: TextFieldProps) {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { isDark } = useTheme();
   const [hidden, setHidden] = useState(true);
   const isPassword = !!secureTextEntry;
+
+  // The border eases to the brand colour while the field has focus.
+  const focus = useSharedValue(0);
+  const borderStyle = useAnimatedStyle(() => ({
+    borderColor: error ? colors.error : interpolateColor(focus.value, [0, 1], [colors.border, colors.link]),
+  }), [error, colors]);
+
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <View>
+      <Animated.View style={[styles.inputWrap, error ? styles.inputWrapError : null, borderStyle]}>
         <TextInput
           placeholderTextColor={colors.muted}
           keyboardAppearance={isDark ? 'dark' : 'light'}
           accessibilityLabel={label}
           secureTextEntry={isPassword && hidden}
-          style={[
-            styles.input,
-            isPassword ? styles.inputWithToggle : null,
-            error ? styles.inputError : null,
-            style,
-          ]}
+          style={[styles.inputInner, isPassword ? styles.inputWithToggle : null, style]}
+          onFocus={(e) => {
+            focus.value = withTiming(1, { duration: 160 });
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            focus.value = withTiming(0, { duration: 160 });
+            onBlur?.(e);
+          }}
           {...rest}
         />
         {isPassword ? (
@@ -270,7 +295,7 @@ export function TextField({ label, error, hint, style, secureTextEntry, ...rest 
             <Text style={styles.inputToggleText}>{hidden ? 'Hiện' : 'Ẩn'}</Text>
           </Pressable>
         ) : null}
-      </View>
+      </Animated.View>
       {error ? (
         <Text style={[styles.fieldHint, { color: colors.error }]}>{error}</Text>
       ) : hint ? (
@@ -398,7 +423,10 @@ export function HeroState({
   return (
     <Animated.View entering={FadeInDown.duration(320)} style={styles.hero}>
       {drawnCheck ? (
-        <AnimatedCheck />
+        <View style={styles.checkWrap}>
+          <AnimatedCheck />
+          <SuccessBurst />
+        </View>
       ) : (
         <View style={[styles.heroIcon, { backgroundColor: t.bg }]}>
           {busy ? (
@@ -543,7 +571,118 @@ export function Reveal({ children, index = 0 }: { children: ReactNode; index?: n
   );
 }
 
-/** Pill-style single-choice control (e.g. theme: system / light / dark). */
+/** Number that eases from its previous value to the new one (e.g. a live attendee count). */
+export function CountUp({
+  value,
+  style,
+  suffix = '',
+  duration = 650,
+}: {
+  value: number;
+  style?: StyleProp<TextStyle>;
+  suffix?: string;
+  duration?: number;
+}) {
+  const [shown, setShown] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === value) {
+      setShown(value);
+      return;
+    }
+    const start = Date.now();
+    let raf = 0;
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const v = Math.round(from + (value - from) * eased);
+      fromRef.current = v;
+      setShown(v);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+  return (
+    <Text style={style} accessibilityLabel={`${value}${suffix}`}>
+      {shown}
+      {suffix}
+    </Text>
+  );
+}
+
+/** Green dot with a soft expanding ring: "this is live right now". */
+export function LiveDot({ color }: { color?: string }) {
+  const colors = useColors();
+  const c = color ?? colors.success;
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 1300 }), -1, false);
+  }, [pulse]);
+  const ring = useAnimatedStyle(() => ({
+    opacity: 0.55 * (1 - pulse.value),
+    transform: [{ scale: 1 + pulse.value * 1.7 }],
+  }));
+  return (
+    <View style={{ width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }} accessible={false}>
+      <Animated.View style={[{ position: 'absolute', width: 9, height: 9, borderRadius: 5, backgroundColor: c }, ring]} />
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c }} />
+    </View>
+  );
+}
+
+const BURST_COUNT = 12;
+
+function BurstParticle({ index, progress, color }: { index: number; progress: { value: number }; color: string }) {
+  const angle = (index / BURST_COUNT) * Math.PI * 2;
+  const dist = 56 + (index % 3) * 14;
+  const size = index % 2 ? 8 : 6;
+  const style = useAnimatedStyle(() => ({
+    opacity: 1 - progress.value,
+    transform: [
+      { translateX: Math.cos(angle) * dist * progress.value },
+      { translateY: Math.sin(angle) * dist * progress.value },
+      { scale: 1 - progress.value * 0.4 },
+    ],
+  }));
+  return (
+    <Animated.View
+      style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: color }, style]}
+    />
+  );
+}
+
+/** Small confetti burst that fires as the success tick finishes drawing. */
+export function SuccessBurst() {
+  const colors = useColors();
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(1000, withTiming(1, { duration: 850, easing: Easing.out(Easing.cubic) }));
+  }, [progress]);
+  const palette = [colors.success, colors.accent, colors.warning, colors.link];
+  return (
+    <View
+      pointerEvents="none"
+      accessible={false}
+      style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
+    >
+      {Array.from({ length: BURST_COUNT }, (_, i) => (
+        <BurstParticle key={i} index={i} progress={progress} color={palette[i % palette.length]} />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Pill-style single-choice control (e.g. theme: system / light / dark). The
+ * blue bubble works like a lens: whatever part of a label it covers turns
+ * white, even if it only overlaps half the word. Drag it, or tap an option.
+ *
+ * Two copies of the labels are drawn: grey ones underneath, white ones inside
+ * the bubble. The bubble clips the white copy, which is shifted the opposite
+ * way so each letter stays exactly over its grey twin.
+ */
 export function Segmented<T extends string>({
   options,
   value,
@@ -555,25 +694,54 @@ export function Segmented<T extends string>({
 }) {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const selected = Math.max(0, options.findIndex((o) => o.value === value));
+  const bubble = useSlidingBubble({
+    count: options.length,
+    index: selected,
+    onSelect: (i) => onChange(options[i].value),
+  });
+
+  const x = bubble.x;
+  const bubbleShift = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  const labelShift = useAnimatedStyle(() => ({ transform: [{ translateX: -x.value }] }));
+
   return (
     <View style={styles.segmented} accessibilityRole="radiogroup">
-      {options.map((o) => {
-        const active = o.value === value;
-        return (
+      <GestureDetector gesture={bubble.gesture}>
+      <View style={styles.segmentRow} onLayout={bubble.onLayout}>
+        {options.map((o) => (
           <Pressable
             key={o.value}
             onPress={() => {
-              haptics.light();
+              if (o.value !== value) haptics.light();
               onChange(o.value);
             }}
             accessibilityRole="radio"
-            accessibilityState={{ selected: active }}
-            style={[styles.segment, active ? styles.segmentActive : null]}
+            accessibilityState={{ selected: o.value === value }}
+            style={styles.segment}
           >
-            <Text style={[styles.segmentText, active ? styles.segmentTextActive : null]}>{o.label}</Text>
+            <Text style={styles.segmentText}>{o.label}</Text>
           </Pressable>
-        );
-      })}
+        ))}
+
+        {bubble.ready ? (
+          <Animated.View
+            pointerEvents="none"
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+            style={[styles.segmentBubble, { width: bubble.bubbleWidth }, bubbleShift]}
+          >
+            <Animated.View style={[styles.segmentLens, { width: bubble.rowWidth }, labelShift]}>
+              {options.map((o) => (
+                <View key={o.value} style={styles.segment}>
+                  <Text style={styles.segmentTextOn}>{o.label}</Text>
+                </View>
+              ))}
+            </Animated.View>
+          </Animated.View>
+        ) : null}
+      </View>
+      </GestureDetector>
     </View>
   );
 }
@@ -621,13 +789,18 @@ const createStyles = (colors: Palette) =>
 
   field: { gap: 6 },
   fieldLabel: { ...typography.small, color: colors.text, fontWeight: '600' },
-  input: {
+  inputWrap: {
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
+    justifyContent: 'center',
+  },
+  inputWrapError: { backgroundColor: colors.errorLight },
+  inputInner: {
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
     color: colors.text,
     fontSize: 15,
   },
@@ -640,7 +813,6 @@ const createStyles = (colors: Palette) =>
     justifyContent: 'center',
   },
   inputToggleText: { ...typography.small, fontWeight: '600', color: colors.link },
-  inputError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   fieldHint: { ...typography.caption, color: colors.muted },
 
   closeButton: {
@@ -656,6 +828,7 @@ const createStyles = (colors: Palette) =>
     zIndex: 10,
   },
   closeButtonPressed: { backgroundColor: colors.border },
+  checkWrap: { alignItems: 'center', justifyContent: 'center' },
   skeletonList: { gap: spacing.md },
   skeletonCard: {
     backgroundColor: colors.surface,
@@ -673,10 +846,20 @@ const createStyles = (colors: Palette) =>
     borderColor: colors.border,
     padding: 4,
   },
-  segment: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
-  segmentActive: { backgroundColor: colors.primary },
+  segmentRow: { flex: 1, flexDirection: 'row', height: 40 },
+  segmentBubble: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+    overflow: 'hidden',
+  },
+  segmentLens: { position: 'absolute', left: 0, top: 0, height: 40, flexDirection: 'row' },
+  segment: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' },
   segmentText: { ...typography.small, fontWeight: '600', color: colors.muted },
-  segmentTextActive: { color: '#FFFFFF' },
+  segmentTextOn: { ...typography.small, fontWeight: '600', color: '#FFFFFF' },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

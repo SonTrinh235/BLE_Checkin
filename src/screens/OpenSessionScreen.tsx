@@ -22,9 +22,11 @@ import {
   Button,
   Card,
   CloseButton,
+  CountUp,
   EmptyState,
   Header,
   Loading,
+  LiveDot,
   Screen,
   SectionTitle,
   StatusCard,
@@ -328,8 +330,11 @@ export default function OpenSessionScreen({ route, navigation }: Props) {
       {session.room ? <Text style={styles.sessionMeta}>Phòng {session.room}</Text> : null}
 
       <View style={styles.summary} accessibilityRole="summary">
-        <Text style={styles.summaryEyebrow}>{timerLabel}</Text>
-        <Text style={styles.summaryCount}>{checkins.length} người đã điểm danh</Text>
+        <View style={styles.eyebrowRow}>
+          <LiveDot color="#4ADE80" />
+          <Text style={styles.summaryEyebrow}>{timerLabel}</Text>
+        </View>
+        <CountUp value={checkins.length} style={styles.summaryCount} suffix=" người đã điểm danh" />
         <Text style={styles.summaryLine}>{bleLine}</Text>
       </View>
 
@@ -447,6 +452,7 @@ const createStyles = (colors: Palette) =>
   sessionTitle: { ...typography.title, color: colors.link },
   sessionMeta: { ...typography.small, color: colors.muted, marginTop: -spacing.sm },
   summary: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.xl, gap: 4 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   summaryEyebrow: { ...typography.caption, color: '#BFDBFE', fontWeight: '700', letterSpacing: 0.8 },
   summaryCount: { fontSize: 24, lineHeight: 30, fontWeight: '700', color: '#FFFFFF' },
   summaryLine: { ...typography.small, color: '#DBEAFE' },

@@ -39,6 +39,8 @@ thời gian thực và xuất báo cáo CSV.
   CLB, tìm CLB, lịch sử nhóm theo ngày kèm thống kê, khung xương khi tải dữ liệu,
   thông báo khi offline, hộp thoại xác nhận và toast riêng của app (thay cho Alert hệ
   thống), chuyển trang/tab mượt, rung nhẹ khi chuyển tab và khi có người mới điểm danh.
+  Chi tiết chuyển động: số đếm chạy lên, chấm "đang mở" nhấp nháy, viền ô nhập đổi màu
+  khi focus, icon tab nảy nhẹ, pháo giấy khi điểm danh thành công, kéo để đồng bộ ở Lịch sử.
 
 ## Công nghệ
 
